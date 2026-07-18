@@ -7,7 +7,7 @@
 
 ![Example Screenshot](docs/example.png)
 
-RSpec `-fd` style output for plain `go test` -- no BDD framework required.
+RSpec style output for plain `go test` -- no BDD framework required.
 
 `gorderly` reads `go test -v`'s raw output directly (the same textual
 protocol every other Go tool already parses) and re-renders it as a nested
@@ -15,6 +15,9 @@ tree, using the hierarchy `t.Run` subtests already carry in their
 `/`-joined names. No `--json-report` round trip, no test-runner dependency,
 no third-party BDD DSL to adopt -- if your tests use stdlib `testing` with
 nested `t.Run`, `gorderly` already understands them.
+[`gotestsum`](https://github.com/gotestyourself/gotestsum) already covers
+`dots`/`testname`/`pkgname`/`testdox` well -- `gorderly` exists
+for the one format it doesn't: a real deduped, nested tree.
 
 ## Installation
 
@@ -50,22 +53,34 @@ renders Mocha/Jest's spec format; `--format documentation` and `--format
 spec` are the long forms of `-fd`/`-fs`, matching
 [`xctidy`](https://github.com/woodie/xctidy)'s exact flag surface.
 
-## Why not gotestsum?
+## Writing tests with `spec`
 
-[`gotestsum`](https://github.com/gotestyourself/gotestsum) is the
-established, widely-adopted tool in this space, and already covers `dots`,
-`testname`, `pkgname`, and `testdox` formats well -- reach for it first if
-one of those is what you want. `gorderly` exists for the one format
-`gotestsum` doesn't have: a real nested, indented tree that dedupes the
-shared parent path between adjacent tests, the way RSpec's `-fd` and
-`xctidy` both render `describe`/`context`/`it`.
+[`sclevine/spec`](https://github.com/sclevine/spec) gives you `when`/`it`
+structure with real `Before`/`After` hooks -- it's built entirely on `t.Run`,
+so its raw `go test -v` output is exactly what `gorderly` already renders.
+`spec` got test organization and per-`it` freshness right years ago; it just
+never had a reporter to match. `gorderly` gives it one for free, since both
+tools only ever speak plain `go test -v`.
 
-## Known limitations
+```go
+spec.Run(t, "GoodTimes", func(t *testing.T, when spec.G, it spec.S) {
+	when("today is Friday (5)", func() {
+		it.Before(func() { gt = newGoodTimes(5) })
 
-- Tree order follows the order results complete in, which matches
-  declaration order for serial tests but can reorder under `t.Parallel()` --
-  the same assumption Ginkgo's own native `-fd` flag makes (see
-  [onsi/ginkgo#1670](https://github.com/onsi/ginkgo/pull/1670)).
+		it("computes tomorrow as Saturday (6)", func() {
+			if gt.tomorrowDotw() != 6 {
+				t.Errorf("tomorrowDotw = %d, want 6", gt.tomorrowDotw())
+			}
+		})
+	})
+})
+```
+Pipe that through `gorderly -fd` and it renders as a real, deduped, nested tree.
+
+## Limitations
+
+- Tree order follows completion order, which matches declaration order for
+  serial tests but can reorder under `t.Parallel()`
 - Subtest names have spaces substituted with underscores by `go test`
   itself; `gorderly` reverses that for display, which is imprecise for
   subtest names with genuine underscores in them.
