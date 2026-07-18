@@ -140,3 +140,58 @@ not a captured real transcript), and whether `t.Log` output really does
 interleave *before* the closing `--- PASS/FAIL` line in every Go version
 (the `pending`-binds-to-next-result-line assumption in `Parse`). A single
 real `go test -v` transcript pasted back would resolve both quickly.
+
+## Confirmed working, first fixes
+
+The user ran the sandbox-written code for real on their Mac. `go test ./...`
+caught one real test bug on the first pass: `render_test.go`'s "prints the
+shared context path once" case counted `"TestMath"`/`"addition"`
+occurrences across the *entire* rendered output, but the `Failures:`
+section legitimately reprints each failure's full hierarchy path (matching
+`xctidy`/`ginkgo-fd`'s own convention) -- so the count was never going to
+land on 1 once a failure existed. Fixed by scoping the count to the tree
+portion only (`strings.Cut(out, "Failures:")`), not by changing the render
+behavior, which was already correct. Also humanized the `Failures:`
+section's hierarchy (it was printing raw underscore-joined names,
+inconsistent with the tree above it) and fixed `golangci-lint`'s `errcheck`
+complaints (five unchecked `fmt.Fprintf(stderr, ...)` calls in `main.go`
+collapsed into one `warn()` helper; three unchecked `Render(...)` calls in
+`render_test.go` given explicit `_, _ =`). All three render styles then
+confirmed for real, one at a time, across three separate runs: `-fd`,
+`-fs`, and classic (via `make check`) -- all clean, all 23 specs passing,
+`gorderly` correctly formatting its own suite. `golangci-lint run` reports
+zero issues. Committed as `d513f8e` ("First round.") and pushed.
+
+## CI, badges, and the first release
+
+Pulled `ginkgo-fd`'s CI/badge shape as the starting template per the user's
+ask, but used `humane`'s `.github/workflows/ci.yml` instead once compared
+side by side -- `humane`'s is the better fit for `gorderly` specifically,
+since it doesn't need `ginkgo-fd`'s "install ginkgo CLI" step at all (no
+framework dependency to install). `.github/workflows/ci.yml`: checkout,
+`actions/setup-go@v4` pinned to `1.25.0` (matching `go.mod`'s `go`
+directive, same comment `humane`'s workflow uses to explain the pin),
+`go build -v ./...`, `go test -v ./...`. No `golangci-lint` step in CI --
+checked across every Go repo in this account (`humane`, `zouk`'s Swift CI,
+`homebrew-zouk`) and none of them wire lint into CI either, so `gorderly`
+doesn't either, matching established precedent rather than improvising one.
+
+`README.md` badge row matches `humane`'s/`ginkgo-fd`'s exact four badges
+(go.mod version, CI, Release, License), same shields.io URL shapes with
+`gorderly` substituted in. `LICENSE` is MIT (from `gh repo create`'s
+default), confirmed before adding the License badge rather than assumed.
+
+`docs/releases/v0.1.0.md` added, matching the `docs/releases/vX.Y.Z.md`
+per-release-notes convention `humane`/`humane-swift` both use (not
+`humane`'s own `docs/COWORK.md`, which is the session log, not release
+notes -- the two are kept separate in every sibling repo). Tagging/pushing/
+`gh release create` all need to happen on the user's own machine (no
+network route to GitHub from this sandbox -- see
+`~/workspace/woodie/docs/COWORK.md`'s "Pushing" section); the exact
+command, matching `humane-swift`'s own documented pattern:
+
+```
+git tag v0.1.0
+git push origin v0.1.0
+gh release create v0.1.0 --title "v0.1.0" --notes-file docs/releases/v0.1.0.md
+```

@@ -1,5 +1,10 @@
 # gorderly
 
+[![go.mod version](https://img.shields.io/github/go-mod/go-version/woodie/gorderly)](https://github.com/woodie/gorderly)
+[![CI](https://github.com/woodie/gorderly/actions/workflows/ci.yml/badge.svg)](https://github.com/woodie/gorderly/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/woodie/gorderly.svg)](https://github.com/woodie/gorderly/releases/latest)
+[![License](https://img.shields.io/github/license/woodie/gorderly.svg)](LICENSE)
+
 RSpec `-fd` style output for plain `go test` -- no BDD framework required.
 
 `gorderly` reads `go test -v`'s raw output directly (the same textual
