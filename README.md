@@ -53,6 +53,15 @@ renders Mocha/Jest's spec format; `--format documentation` and `--format
 spec` are the long forms of `-fd`/`-fs`, matching
 [`xctidy`](https://github.com/woodie/xctidy)'s exact flag surface.
 
+`-fv` (long form `--format vitest`) renders
+[Vitest](https://vitest.dev)'s own tree-reporter conventions: `✓`/`×`/`↓`
+glyphs and a right-justified `Test Files`/`Tests`/`Duration` footer, so
+`go test`'s output reads as a continuation of the same terminal a
+`vitest run` right above it already printed -- gorderly never touches or
+wraps Vitest's own output to get there, it just matches it. This flag is
+gorderly-specific, not part of the shared flag surface with `xctidy`
+(there's no Vitest equivalent on the XCTest side).
+
 ## Writing tests with `spec`
 
 [`sclevine/spec`](https://github.com/sclevine/spec) gives you `when`/`it`
@@ -88,6 +97,11 @@ Pipe that through `gorderly -fd` and it renders as a real, deduped, nested tree.
 - Package build failures are reported by outcome only, not with the
   underlying compiler error -- run `go vet`/`go build` separately to see why
   a package failed to build.
+- `-fv`'s per-leaf millisecond timing is only as precise as `go test -v`'s
+  own output, which reports elapsed time to two decimal places of a second
+  (e.g. `0.00s`) -- fast subtests will often show a flat `0ms` where Vitest's
+  own JS timers would show `2ms`/`4ms`. This is a ceiling in `go test`
+  itself, not something `-fv` can recover.
 
 ## Development
 

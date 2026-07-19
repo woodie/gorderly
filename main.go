@@ -65,16 +65,20 @@ func parseFlags(args []string) (style Style, passthrough []string, err error) {
 			style = StyleFd
 		case "-fs":
 			style = StyleFs
+		case "-fv":
+			style = StyleFv
 		case "--format":
 			i++
 			if i >= len(args) {
-				return style, nil, fmt.Errorf("--format requires an argument (documentation|spec)")
+				return style, nil, fmt.Errorf("--format requires an argument (documentation|spec|vitest)")
 			}
 			switch args[i] {
 			case "documentation":
 				style = StyleFd
 			case "spec":
 				style = StyleFs
+			case "vitest":
+				style = StyleFv
 			default:
 				return style, nil, fmt.Errorf("unknown --format %q", args[i])
 			}

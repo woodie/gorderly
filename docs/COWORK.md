@@ -37,12 +37,36 @@ installed binary, no round-tripped JSON report).
   result line seen, matching `-v` mode's actual ordering.
 - `render.go` -- `Render([]PackageResult, Style, io.Writer, bool)`. Same
   dedupe-shared-prefix tree walk as `xctidy`'s `Engine`, walked over
-  `/`-split hierarchy instead of comma-disambiguated names. Three styles
-  (`StyleClassic`/`StyleFd`/`StyleFs`) share one closing footer.
-- `main.go` -- flag parsing (`-fd`/`-fs`/`--format documentation|spec`,
-  default classic) plus `openInput`, which picks between two modes: read
-  piped stdin directly, or shell out to `go test -v <args>` itself. Both
-  `go test -v ./... | gorderly -fd` and `gorderly -fd .` work.
+  `/`-split hierarchy instead of comma-disambiguated names. Four styles
+  (`StyleClassic`/`StyleFd`/`StyleFs`/`StyleFv`) -- the first three share
+  one closing footer; `StyleFv` closes with Vitest's own `Test
+  Files`/`Tests`/`Duration` shape instead (see below).
+- `main.go` -- flag parsing (`-fd`/`-fs`/`-fv`/`--format
+  documentation|spec|vitest`, default classic) plus `openInput`, which
+  picks between two modes: read piped stdin directly, or shell out to
+  `go test -v <args>` itself. Both `go test -v ./... | gorderly -fd` and
+  `gorderly -fd .` work.
+
+### `-fv`: matching Vitest, not wrapping it
+
+Added so a Go monorepo running both `vitest run` and `go test` side by
+side (e.g. `lambada`) gets visually consistent output without gorderly
+ever touching or reformatting Vitest's own output -- Vitest's real
+reporters (confirmed from its source, not guessed: `packages/vitest/src/
+node/reporters/renderers/{utils,figures}.ts`) use `✓`/`×`/`↓` (not
+`✔`/`✖`/`⊘`, and the fail glyph is a multiplication sign, not `✗`), a
+two-toned green duration (`colorize green` for the number, a separate
+`brightGreen`/92 for the `ms`/`s` unit), and a footer with labels
+right-justified to 11 columns (`padSummaryTitle`'s `str.padStart(11)`).
+`formatVitestDuration`/`formatVitestDurationParts` reproduce Vitest's own
+`formatTime`: whole ms under 1000ms, seconds to two decimals at or above.
+One real, unavoidable precision gap: `go test -v` only reports elapsed
+time to two decimal places of a second, so fast subtests routinely show a
+flat `0ms` where Vitest's own finer JS timers would show `2ms`/`4ms` --
+documented in the README's Limitations section, not something `-fv` can
+fix. `gotestsum` already owns JUnit/dots/progress formats well (see
+"Deliberately not built" below); `-fv` isn't competing with it, it's
+matching a JS test runner's own terminal conventions instead.
 
 ## Deliberately not built (v1)
 
@@ -62,12 +86,13 @@ installed binary, no round-tripped JSON report).
   this account.
 - **Released**: `v0.1.0` tagged and published; `go run
   github.com/woodie/gorderly@latest` confirmed resolving and running for
-  real from an unrelated directory.
+  real from an unrelated directory. `v0.2.0` adds `-fv`/`--format vitest`.
 - **Own tests**: migrated off hand-rolled `t.Run` onto `sclevine/spec`
   (`parse_test.go`/`render_test.go`, `spec.Run(t, "...", func(t
-  *testing.T, when spec.G, it spec.S) {...})`). All 23 specs pass via
+  *testing.T, when spec.G, it spec.S) {...})`). All 29 specs pass via
   `go test -v ./... | gorderly -fd` (gorderly dogfooding its own binary on
-  its own suite).
+  its own suite) -- confirmed on the user's own Mac, including the new
+  `-fv` cases.
 
 ## Why `spec`, not Ginkgo/Gomega, for gorderly's own tests
 
@@ -109,4 +134,12 @@ go mod tidy
 go test ./...
 make check
 go run . -fd .
+go run . -fv .
 ```
+
+Also no `git push` access -- confirmed the hard way this session (a
+`git push origin --delete <branch>` in an unrelated repo failed with
+"Host key verification failed"). Commits and annotated tags get made
+locally in the sandbox (same mounted filesystem as the user's Mac), but
+`git push origin main --tags` (or equivalent) is always handed off for
+the user to run themselves.

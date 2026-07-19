@@ -176,5 +176,106 @@ func TestRender(t *testing.T) {
 				}
 			})
 		})
+
+		when("in fv style", func() {
+			var buf bytes.Buffer
+			var out string
+
+			it.Before(func() {
+				_, _ = Render(samplePackages(), StyleFv, &buf, false)
+				out = buf.String()
+			})
+
+			it("uses Vitest's own glyphs for pass, fail, and skip", func() {
+				if !strings.Contains(out, "✓ adds two positive numbers") {
+					t.Errorf("missing passing checkmark in:\n%s", out)
+				}
+				if !strings.Contains(out, "× adds a negative number") {
+					t.Errorf("missing failing cross in:\n%s", out)
+				}
+				if !strings.Contains(out, "↓ is skipped for now") {
+					t.Errorf("missing skipped marker in:\n%s", out)
+				}
+			})
+
+			it("closes with a Vitest-shaped Test Files, Tests, and Duration footer", func() {
+				if !strings.Contains(out, "Test Files  1 failed (1)") {
+					t.Errorf("missing Test Files summary in:\n%s", out)
+				}
+				if !strings.Contains(out, "Tests  1 failed | 1 passed | 1 skipped (3)") {
+					t.Errorf("missing Tests summary in:\n%s", out)
+				}
+				if !strings.Contains(out, "Duration  ") {
+					t.Errorf("missing Duration line in:\n%s", out)
+				}
+			})
+
+			it("omits the RSpec-style Test Succeeded or Test Failed verdict line", func() {
+				if strings.Contains(out, "Test Succeeded") || strings.Contains(out, "Test Failed") {
+					t.Errorf("unexpected classic verdict line in fv style:\n%s", out)
+				}
+			})
+
+			it("shows elapsed time in milliseconds on pass and fail leaves, like Vitest's own tree", func() {
+				if !strings.Contains(out, "✓ adds two positive numbers 1ms") {
+					t.Errorf("missing per-leaf duration on pass in:\n%s", out)
+				}
+				if !strings.Contains(out, "× adds a negative number 2ms") {
+					t.Errorf("missing per-leaf duration on fail in:\n%s", out)
+				}
+				if strings.Contains(out, "↓ is skipped for now ") {
+					t.Errorf("unexpected duration on a skipped leaf in:\n%s", out)
+				}
+			})
+		})
+
+		when("in fv style with a leaf slower than one second", func() {
+			var buf bytes.Buffer
+			var out string
+
+			it.Before(func() {
+				pkgs := []PackageResult{{
+					ImportPath: "example.com/slow",
+					Outcome:    "ok",
+					Results: []TestResult{
+						{Hierarchy: []string{"TestSlow", "takes a while"}, State: StatePass, Elapsed: 1.5},
+					},
+				}}
+				_, _ = Render(pkgs, StyleFv, &buf, false)
+				out = buf.String()
+			})
+
+			it("switches from milliseconds to seconds, matching Vitest's own formatTime threshold", func() {
+				if !strings.Contains(out, "✓ takes a while 1.50s") {
+					t.Errorf("expected seconds-formatted duration in:\n%s", out)
+				}
+			})
+		})
+
+		when("in fv style with every test passing", func() {
+			var buf bytes.Buffer
+			var out string
+
+			it.Before(func() {
+				pkgs := []PackageResult{{
+					ImportPath: "example.com/clean",
+					Outcome:    "ok",
+					Results: []TestResult{
+						{Hierarchy: []string{"TestClean", "does the thing"}, State: StatePass, Elapsed: 0.001},
+					},
+				}}
+				_, _ = Render(pkgs, StyleFv, &buf, false)
+				out = buf.String()
+			})
+
+			it("reports one passing test file and one passing test", func() {
+				if !strings.Contains(out, "Test Files  1 passed (1)") {
+					t.Errorf("missing passing Test Files summary in:\n%s", out)
+				}
+				if !strings.Contains(out, "Tests  1 passed (1)") {
+					t.Errorf("missing passing Tests summary in:\n%s", out)
+				}
+			})
+		})
 	})
 }
