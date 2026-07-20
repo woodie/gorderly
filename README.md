@@ -119,8 +119,8 @@ func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
 
 func TestObject(t *testing.T) {
 	spec.Run(t, "Object", func(t *testing.T, describe spec.G, it spec.S) {
-
 		context, before, after := describe, it.Before, it.After
+
 		var obj *myapp.Object
 
 		before(func() { obj = myapp.NewObject(t.Context()) })

@@ -28,7 +28,6 @@ FAIL	example.com/math	0.003s
 
 func TestParse(t *testing.T) {
 	spec.Run(t, "Parse", func(t *testing.T, describe spec.G, it spec.S) {
-
 		context, before, _ := describe, it.Before, it.After
 
 		context("a transcript mixes pass, fail, and skip", func() {

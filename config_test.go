@@ -13,7 +13,6 @@ func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
 /*
 func TestCalculator(t *testing.T) {
 	spec.Run(t, "Calculator", func(t *testing.T, describe spec.G, it spec.S) {
-
 		context, before, after := describe, it.Before, it.After // HERE
 
 		var calculator *Calculator

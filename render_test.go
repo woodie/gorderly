@@ -25,7 +25,6 @@ func samplePackages() []PackageResult {
 
 func TestRender(t *testing.T) {
 	spec.Run(t, "Render", func(t *testing.T, describe spec.G, it spec.S) {
-
 		context, before, _ := describe, it.Before, it.After
 
 		context("a package has a pass, a fail, and a skip", func() {
