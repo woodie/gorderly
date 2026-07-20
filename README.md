@@ -87,6 +87,65 @@ spec.Run(t, "GoodTimes", func(t *testing.T, when spec.G, it spec.S) {
 ```
 Pipe that through `gorderly -fd` and it renders as a real, deduped, nested tree.
 
+## The full toolchain: `spec` + `expect` + `gorderly`
+
+Each piece stays independent -- `gorderly` only ever needs `go test -v`'s
+raw output, `spec` needs no assertion library, `expect` needs no BDD
+framework -- but they're built to be used together, and here's what that
+looks like in one real suite: [`github.com/woodie/spec`](https://github.com/woodie/spec)
+(this account's fork, adding `RunAliased`/`Describe`/`Var[T]`/`it.Context()`/`it.T()`
+on top of upstream) for structure, [`github.com/woodie/expect`](https://github.com/woodie/expect)
+for Gomega-style matchers against plain `*testing.T`, and `gorderly` to render the result.
+
+```go
+package myapp_test
+
+import (
+	"testing"
+
+	"github.com/sclevine/spec"
+	. "github.com/woodie/expect"
+)
+
+// expect is the recommended lowercase alias -- one line, declared once per
+// test package (see expect's own README, "Lowercase call sites").
+func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
+
+func TestObject(t *testing.T) {
+	spec.RunAliased(t, "Object", objectSuite)
+}
+
+func objectSuite(t *testing.T, describe, context spec.Describe, it spec.S, before, after func(func())) {
+	var obj *myapp.Object
+
+	before(func() { obj = myapp.NewObject(it.Context()) })
+	after(func() { obj.Close() })
+
+	describe("DoThing", func() {
+		context("with a temp dir", func() {
+			before(func() { obj.Dir = it.T().TempDir() })
+
+			it("succeeds", func() {
+				expect(obj.DoThing(), t).To(Succeed())
+			})
+		})
+	})
+}
+```
+
+`TestObject` is a one-liner into a named `objectSuite` function -- see
+`lambada`'s own test files for this pattern used against a real HTTP
+app, not a sketch. Every identifier that reads lowercase here does so
+for its own reason: `describe`/`context`/`it`/`before`/`after` are just
+this function's own parameter names (`spec.RunAliased` hands them in
+positionally, so nothing stops you naming them however you like), while
+`expect` is a one-line local alias standing in for `expect`'s own
+capitalized `Expect`, since Go requires a dot-imported name to stay
+capitalized but never requires that of a parameter name. Pipe the whole
+thing through `go test -v ./... | gorderly -fd` and it renders exactly
+like the `spec`-only example above -- `gorderly` never knows or cares
+that `expect` was involved, it only ever sees `go test -v`'s own output.
+
 ## Limitations
 
 - Tree order follows completion order, which matches declaration order for
