@@ -27,10 +27,12 @@ FAIL	example.com/math	0.003s
 `
 
 func TestParse(t *testing.T) {
-	spec.RunAliased(t, "Parse", parseSuite)
+	spec.Run(t, "Parse", parseSuite)
 }
 
-func parseSuite(t *testing.T, _, context spec.Describe, it spec.S, before, _ func(func())) {
+func parseSuite(t *testing.T, describe spec.G, it spec.S) {
+	context, before, _ := describe, it.Before, it.After
+
 	context("a transcript mixes pass, fail, and skip", func() {
 		var pkgs []PackageResult
 		var err error

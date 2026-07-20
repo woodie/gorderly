@@ -152,6 +152,40 @@ Confirmed for real on the user's own Mac: `go test -v ./... | gorderly
 -fd` -- 0 failed, 0 skipped, 29 total, gorderly dogfooding its own binary
 on its own newly-migrated suite.
 
+## Reversal: moved off the `woodie/spec` fork, back to plain upstream
+
+`parse_test.go`/`render_test.go` (and this README's "full toolchain"
+example) used `spec.RunAliased` against the `github.com/woodie/spec` fork.
+Walked back in favor of plain `github.com/sclevine/spec` -- no `replace`
+directive, no `RunAliased`, no `.AsContext()`. The fork's whole value
+turned out to be self-inflicted: `Aliases`/`RunAliased` exist to hand
+`before`/`after`/`context` in as bound parameters so no per-file alias line
+is needed, but the one-line alternative -- `context, before, after :=
+describe, it.Before, it.After`, written by hand at the top of the suite
+function -- needs nothing from the fork at all, and reads more plainly
+than a six-parameter suite-function signature does. `it.T()`/`it.Context()`
+turn out to be unnecessary too: since `spec` re-evaluates the whole suite
+function per spec, the function's own `t *testing.T` parameter is already
+correctly scoped inside any `before`/`after`/`it` closure by ordinary Go
+closure capture (confirmed against `spec`'s own `t_test.go`, which could
+have written `t.TempDir()` directly instead of `it.T().TempDir()` the
+whole time). `go.mod` now depends on `github.com/sclevine/spec v1.4.0`
+directly, real upstream, no `replace` line -- confirmed clean on a real
+Mac: `go mod tidy` resolved without a stale checksum, and `go test -v
+./...` (piped through `gorderly` itself) passes all 29 specs. `expect` is
+unaffected -- kept as-is, dot-imported, paired with plain upstream `spec`
+rather than the fork.
+
+Same session: `expect_alias_test.go` renamed to `config_test.go`, which
+now carries two things -- the real `expect` alias (actual code, runs as
+part of the suite) and a commented-out `/* ... */` translation of a
+familiar RSpec `Calculator` example into `describe`/`context`/`it`/
+`before`/`after`, kept purely as a non-executing visual reference. This
+file is a deliberate exception to the account's usual one-line-comment
+rule (`~/workspace/woodie/docs/COWORK.md`, "Comments"): its whole purpose
+is to be documentation as much as code, so the example is allowed to be a
+real, multi-line block rather than pushed out to a companion doc.
+
 ## Sandbox limitation
 
 No Go toolchain here (same situation as `humane`, `lambada`, `spec`,

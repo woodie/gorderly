@@ -96,10 +96,12 @@ Pipe that through `gorderly -fd` and it renders as a real, deduped, nested tree.
 Each piece stays independent -- `gorderly` only ever needs `go test -v`'s
 raw output, `spec` needs no assertion library, `expect` needs no BDD
 framework -- but they're built to be used together, and here's what that
-looks like in one real suite: [`github.com/woodie/spec`](https://github.com/woodie/spec)
-(this account's fork, adding `RunAliased`/`Describe`/`Var[T]`/`it.Context()`/`it.T()`
-on top of upstream) for structure, [`github.com/woodie/expect`](https://github.com/woodie/expect)
-for Gomega-style matchers against plain `*testing.T`, and `gorderly` to render the result.
+looks like in one real suite: plain
+[`sclevine/spec`](https://github.com/sclevine/spec) for structure (no
+fork -- `before`/`after`/`context` are one local line, see `spec`'s own
+README), [`github.com/woodie/expect`](https://github.com/woodie/expect)
+for Gomega-style matchers against plain `*testing.T`, and `gorderly` to
+render the result.
 
 ```go
 package myapp_test
@@ -116,18 +118,19 @@ import (
 func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
 
 func TestObject(t *testing.T) {
-	spec.RunAliased(t, "Object", objectSuite)
+	spec.Run(t, "Object", objectSuite)
 }
 
-func objectSuite(t *testing.T, describe, context spec.Describe, it spec.S, before, after func(func())) {
+func objectSuite(t *testing.T, describe spec.G, it spec.S) {
+	context, before, after := describe, it.Before, it.After
 	var obj *myapp.Object
 
-	before(func() { obj = myapp.NewObject(it.Context()) })
+	before(func() { obj = myapp.NewObject(t.Context()) })
 	after(func() { obj.Close() })
 
 	describe("DoThing", func() {
 		context("with a temp dir", func() {
-			before(func() { obj.Dir = it.T().TempDir() })
+			before(func() { obj.Dir = t.TempDir() })
 
 			it("succeeds", func() {
 				expect(obj.DoThing(), t).To(Succeed())
@@ -139,16 +142,22 @@ func objectSuite(t *testing.T, describe, context spec.Describe, it spec.S, befor
 
 `TestObject` is a one-liner into a named `objectSuite` function -- see
 `lambada`'s own test files for this pattern used against a real HTTP
-app, not a sketch. Every identifier that reads lowercase here does so
-for its own reason: `describe`/`context`/`it`/`before`/`after` are just
-this function's own parameter names (`spec.RunAliased` hands them in
-positionally, so nothing stops you naming them however you like), while
-`expect` is a one-line local alias standing in for `expect`'s own
-capitalized `Expect`, since Go requires a dot-imported name to stay
-capitalized but never requires that of a parameter name. Pipe the whole
-thing through `go test -v ./... | gorderly -fd` and it renders exactly
-like the `spec`-only example above -- `gorderly` never knows or cares
-that `expect` was involved, it only ever sees `go test -v`'s own output.
+app, not a sketch. Every identifier that reads lowercase here does so for
+its own reason: `describe`/`it` are just this function's own parameter
+names (`spec.Run` hands them in positionally, so nothing stops you naming
+them however you like); `context`/`before`/`after` are the same two
+values under three names, assigned once at the top of the function
+(`context, before, after := describe, it.Before, it.After`) instead of
+called as `describe.AsContext()`/`it.Before(...)`/`it.After(...)` at every
+site; `t.Context()`/`t.TempDir()` are the suite function's own `t`
+parameter, reachable from inside `before`/`after` by ordinary closure
+capture, no special method needed; and `expect` is a one-line local alias
+standing in for `expect`'s own capitalized `Expect`, since Go requires a
+dot-imported name to stay capitalized but never requires that of a
+parameter or local variable. Pipe the whole thing through `go test -v
+./... | gorderly -fd` and it renders exactly like the `spec`-only example
+above -- `gorderly` never knows or cares that `expect` was involved, it
+only ever sees `go test -v`'s own output.
 
 ## Limitations
 

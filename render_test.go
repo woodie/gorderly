@@ -24,10 +24,12 @@ func samplePackages() []PackageResult {
 }
 
 func TestRender(t *testing.T) {
-	spec.RunAliased(t, "Render", renderSuite)
+	spec.Run(t, "Render", renderSuite)
 }
 
-func renderSuite(t *testing.T, _, context spec.Describe, it spec.S, before, _ func(func())) {
+func renderSuite(t *testing.T, describe spec.G, it spec.S) {
+	context, before, _ := describe, it.Before, it.After
+
 	context("a package has a pass, a fail, and a skip", func() {
 		var buf bytes.Buffer
 		var failed int
