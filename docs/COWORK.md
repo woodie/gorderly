@@ -108,11 +108,12 @@ spec runs through a real `t.Run`) has no such conflict.
 The fuller exploration -- language-mechanism sketches considered before
 finding `spec`, the Swift/Kotlin `GoodTimesSpec` comparison that shaped the
 design goals, the case for adopting `spec` over hand-rolling -- lives in
-git history for this file and in `~/workspace/spec`'s own `docs/COWORK.md`,
-which is now the canonical home for anything about `spec` itself (including
-the fork's own additions: `Context()`/`T()`/`Describe`/`Var[T]`/
-`RunAliased`). Not repeated here to avoid two copies of the same history
-drifting apart.
+this file's own git history. (An earlier version of this note pointed at
+`~/workspace/spec`'s own `docs/COWORK.md` as the canonical home for the
+fork's additions -- that file no longer exists: `spec`'s `master` was
+reset to plain `upstream/master` once every real consumer walked back off
+the fork, wiping the fork-only `docs/` folder along with it. See
+"Reversal: moved off the `woodie/spec` fork" below for why.)
 
 ## Done: migrated to `expect`, full parity with `lambada`/`humane`
 
