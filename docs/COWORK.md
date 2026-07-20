@@ -87,12 +87,13 @@ matching a JS test runner's own terminal conventions instead.
 - **Released**: `v0.1.0` tagged and published; `go run
   github.com/woodie/gorderly@latest` confirmed resolving and running for
   real from an unrelated directory. `v0.2.0` adds `-fv`/`--format vitest`.
-- **Own tests**: migrated off hand-rolled `t.Run` onto `sclevine/spec`
-  (`parse_test.go`/`render_test.go`, `spec.Run(t, "...", func(t
-  *testing.T, when spec.G, it spec.S) {...})`). All 29 specs pass via
-  `go test -v ./... | gorderly -fd` (gorderly dogfooding its own binary on
-  its own suite) -- confirmed on the user's own Mac, including the new
-  `-fv` cases.
+- **Own tests**: migrated off hand-rolled `t.Run` onto `sclevine/spec`,
+  later onto the `woodie/spec` fork + `expect` (`spec.RunAliased` +
+  `parseSuite`/`renderSuite` named functions, see "Done: migrated to
+  expect" below for the current shape). All 29 specs pass via `go test -v
+  ./... | gorderly -fd` (gorderly dogfooding its own binary on its own
+  suite) -- confirmed on the user's own Mac, including the new `-fv`
+  cases.
 
 ## Why `spec`, not Ginkgo/Gomega, for gorderly's own tests
 
@@ -147,7 +148,9 @@ a partial assertion swap:
 No behavior change to `Parse`/`Render`/`gorderly`'s actual output -- test
 suite and tooling only, so no new `gorderly` version tag, matching the
 same call made for `lambada`'s and `humane`'s equivalent updates.
-`go.sum` needs a real `go mod tidy` on the user's Mac before this builds.
+Confirmed for real on the user's own Mac: `go test -v ./... | gorderly
+-fd` -- 0 failed, 0 skipped, 29 total, gorderly dogfooding its own binary
+on its own newly-migrated suite.
 
 ## Sandbox limitation
 
