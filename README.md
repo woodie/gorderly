@@ -69,8 +69,12 @@ structure with real `Before`/`After` hooks -- it's built entirely on `t.Run`,
 so its raw `go test -v` output is exactly what `gorderly` already renders.
 `spec` got test organization and per-`it` freshness right years ago; it just
 never had a reporter to match. `gorderly` gives it one for free, since both
-tools only ever speak plain `go test -v`. `gorderly`'s own tests
-(`parse_test.go`, `render_test.go`) are written this way.
+tools only ever speak plain `go test -v`. This is the minimal shape -- plain
+upstream `spec`, no `expect`, no fork -- for a project that just wants
+`gorderly`'s renderer with no other opinions. `gorderly`'s own tests
+(`parse_test.go`, `render_test.go`) have since moved to the fuller shape
+below ("The full toolchain") -- see that section for what they actually
+look like today.
 
 ```go
 spec.Run(t, "GoodTimes", func(t *testing.T, when spec.G, it spec.S) {

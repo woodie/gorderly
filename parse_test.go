@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/sclevine/spec"
+	. "github.com/woodie/expect"
 )
 
 const mixedTranscript = `=== RUN   TestMath
@@ -26,96 +27,81 @@ FAIL	example.com/math	0.003s
 `
 
 func TestParse(t *testing.T) {
-	spec.Run(t, "Parse", func(t *testing.T, when spec.G, it spec.S) {
-		when("a transcript mixes pass, fail, and skip", func() {
-			var pkgs []PackageResult
-			var err error
-			var pkg PackageResult
+	spec.RunAliased(t, "Parse", parseSuite)
+}
 
-			it.Before(func() {
-				pkgs, err = Parse(strings.NewReader(mixedTranscript))
-				if len(pkgs) > 0 {
-					pkg = pkgs[0]
-				}
-			})
+func parseSuite(t *testing.T, _, context spec.Describe, it spec.S, before, _ func(func())) {
+	context("a transcript mixes pass, fail, and skip", func() {
+		var pkgs []PackageResult
+		var err error
+		var pkg PackageResult
 
-			it("returns no error", func() {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-			})
-
-			it("groups results under one package", func() {
-				if len(pkgs) != 1 {
-					t.Fatalf("expected 1 package, got %d", len(pkgs))
-				}
-			})
-
-			it("captures the package import path and outcome", func() {
-				if pkg.ImportPath != "example.com/math" {
-					t.Errorf("import path = %q", pkg.ImportPath)
-				}
-				if pkg.Outcome != "FAIL" {
-					t.Errorf("outcome = %q", pkg.Outcome)
-				}
-			})
-
-			it("keeps only leaf results, not the container roll-up lines", func() {
-				if len(pkg.Results) != 3 {
-					t.Fatalf("expected 3 leaf results, got %d: %+v", len(pkg.Results), pkg.Results)
-				}
-			})
-
-			it("preserves each leaf's full hierarchy", func() {
-				want := [][]string{
-					{"TestMath", "addition", "adds_two_positive_numbers"},
-					{"TestMath", "addition", "adds_a_negative_number"},
-					{"TestMath", "subtraction", "is_skipped_for_now"},
-				}
-				for i, r := range pkg.Results {
-					if strings.Join(r.Hierarchy, "/") != strings.Join(want[i], "/") {
-						t.Errorf("result %d hierarchy = %v, want %v", i, r.Hierarchy, want[i])
-					}
-				}
-			})
-
-			it("records each leaf's state", func() {
-				want := []TestState{StatePass, StateFail, StateSkip}
-				for i, r := range pkg.Results {
-					if r.State != want[i] {
-						t.Errorf("result %d state = %s, want %s", i, r.State, want[i])
-					}
-				}
-			})
-
-			it("attaches captured log output to the failing leaf", func() {
-				r := pkg.Results[1]
-				if len(r.Output) != 1 || r.Output[0] != "math_test.go:12: got 3, want 4" {
-					t.Errorf("output = %v", r.Output)
-				}
-			})
+		before(func() {
+			pkgs, err = Parse(strings.NewReader(mixedTranscript))
+			if len(pkgs) > 0 {
+				pkg = pkgs[0]
+			}
 		})
 
-		when("a package has no test files", func() {
-			var pkgs []PackageResult
-			var err error
+		it("returns no error", func() {
+			expect(err, t).To(Succeed())
+		})
 
-			it.Before(func() {
-				transcript := "?   \texample.com/empty\t[no test files]\n"
-				pkgs, err = Parse(strings.NewReader(transcript))
-			})
+		it("groups results under one package", func() {
+			expect(len(pkgs), t).To(Equal(1))
+		})
 
-			it("returns no error", func() {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-			})
+		it("captures the package import path and outcome", func() {
+			expect(pkg.ImportPath, t).To(Equal("example.com/math"))
+			expect(pkg.Outcome, t).To(Equal("FAIL"))
+		})
 
-			it("records the package with no results", func() {
-				if len(pkgs) != 1 || pkgs[0].Outcome != "no test files" {
-					t.Fatalf("pkgs = %+v", pkgs)
-				}
-			})
+		it("keeps only leaf results, not the container roll-up lines", func() {
+			expect(len(pkg.Results), t).To(Equal(3))
+		})
+
+		it("preserves each leaf's full hierarchy", func() {
+			want := [][]string{
+				{"TestMath", "addition", "adds_two_positive_numbers"},
+				{"TestMath", "addition", "adds_a_negative_number"},
+				{"TestMath", "subtraction", "is_skipped_for_now"},
+			}
+			for i, r := range pkg.Results {
+				expect(r.Hierarchy, t).To(DeepEqual(want[i]))
+			}
+		})
+
+		it("records each leaf's state", func() {
+			want := []TestState{StatePass, StateFail, StateSkip}
+			for i, r := range pkg.Results {
+				expect(r.State, t).To(Equal(want[i]))
+			}
+		})
+
+		it("attaches captured log output to the failing leaf", func() {
+			r := pkg.Results[1]
+			expect(r.Output, t).To(DeepEqual([]string{"math_test.go:12: got 3, want 4"}))
+		})
+	})
+
+	context("a package has no test files", func() {
+		var pkgs []PackageResult
+		var err error
+
+		before(func() {
+			transcript := "?   \texample.com/empty\t[no test files]\n"
+			pkgs, err = Parse(strings.NewReader(transcript))
+		})
+
+		it("returns no error", func() {
+			expect(err, t).To(Succeed())
+		})
+
+		it("records the package with no results", func() {
+			expect(len(pkgs), t).To(Equal(1))
+			if len(pkgs) == 1 {
+				expect(pkgs[0].Outcome, t).To(Equal("no test files"))
+			}
 		})
 	})
 }

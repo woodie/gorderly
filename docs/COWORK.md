@@ -113,14 +113,41 @@ the fork's own additions: `Context()`/`T()`/`Describe`/`Var[T]`/
 `RunAliased`). Not repeated here to avoid two copies of the same history
 drifting apart.
 
-## Next: migrate to `expect`
+## Done: migrated to `expect`, full parity with `lambada`/`humane`
 
-`parse_test.go`/`render_test.go` use `spec` for structure but still assert
-with plain `if x != y { t.Error(...) }` -- `spec` deliberately ships no
-assertions of its own. `~/workspace/expect` (Gomega-style, generics-based,
-built alongside `lambada`'s own Ginkgo/Gomega migration) is the intended
-replacement; `lambada`'s test suite already made this move, `gorderly`'s
-hasn't yet. Open item for a future session.
+The open item above is closed. `parse_test.go`/`render_test.go` used to
+assert with plain `if x != y { t.Fatalf(...)/t.Errorf(...) }` on bare
+upstream `spec.Run`/`when`/`it.Before` -- no `expect`, no fork. Brought all
+the way to the same shape `lambada` and `humane` are already on, not just
+a partial assertion swap:
+
+- `go.mod` now requires `github.com/woodie/expect v0.2.0` and replaces
+  `github.com/sclevine/spec` with `github.com/woodie/spec v0.1.0` (was
+  plain upstream `v1.4.0`, no fork, since nothing here needed the fork's
+  additions until now).
+- `TestParse`/`TestRender` are one-liners into named `parseSuite`/
+  `renderSuite` functions via `spec.RunAliased`, `when(...)` renamed to
+  `context(...)` (these are scenarios, not feature groupings -- no
+  `describe` wrapper needed at this nesting depth).
+- Every assertion is `expect(got, t).To(Matcher)` via the recommended
+  lowercase alias (new `expect_alias_test.go`, shared by both files),
+  using `Succeed`/`Equal`/`DeepEqual`/`Contain`/`NotTo` in place of the old
+  hand-rolled `if`/`t.Errorf` checks. Two spots (`pkg.Results[i].Hierarchy`,
+  `r.Output`) use `DeepEqual` on the whole slice instead of the original
+  `strings.Join(...)`-then-compare workaround -- a real small improvement,
+  not just a mechanical port, since `DeepEqual` compares the slice
+  directly and needed no string-join step to begin with.
+- Two `it`s that originally combined two conditions with `||` into one
+  `t.Fatalf`/`t.Errorf` (`records the package with no results`) needed a
+  guard (`if len(pkgs) == 1 { ... }`) around the second `expect` call to
+  preserve the original short-circuit safety -- splitting an `||` into two
+  independent `expect` calls loses that guarantee, since Go doesn't
+  short-circuit between separate statements the way `||` does within one.
+
+No behavior change to `Parse`/`Render`/`gorderly`'s actual output -- test
+suite and tooling only, so no new `gorderly` version tag, matching the
+same call made for `lambada`'s and `humane`'s equivalent updates.
+`go.sum` needs a real `go mod tidy` on the user's Mac before this builds.
 
 ## Sandbox limitation
 
