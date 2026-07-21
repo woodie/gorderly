@@ -66,14 +66,27 @@ gorderly-specific, not part of the shared flag surface with `xctidy`
 immediately, without waiting on stdin -- matching `xctidy`'s own
 `--version`/`-v`.
 
-## Color output
+## Output styles
 
-Color is on by default and auto-disables when stdout isn't a real terminal
-(piped to a file or another process) or when `NO_COLOR` is set in the
-environment -- matching `xctidy`'s own `isatty` check. The classic, `-fd`,
-and `-fs` styles color only the glyph (and, for classic, the elapsed-time
-number) rather than the whole line, so a test's name always renders in the
-terminal's own default color.
+Four named styles, each matching a convention from a familiar test runner.
+The first three end with the same xcbeautify-style footer; `-fv` ends with
+Vitest's own footer shape instead.
+
+| Flag | Convention | Look |
+|---|---|---|
+|   | Our base formatter | Glyph + `name (N seconds)`, failures add `(FAILED - N)` |
+| -fd | RSpec's doc format | Plain colored name, yellow `(PENDING)` for skips |
+| -fs | Mocha's spec format | Green `✔` + gray name, red `✗ name (FAILED - N)` |
+| -fv | Vitest's own tree | Green `✓ name`, two-toned green `2ms`, red `× name`, dim gray `↓ name` |
+
+`-fv` is [`xctidy`](https://github.com/woodie/xctidy)'s `-fv` counterpart
+for the Go Test side -- same glyphs, same millisecond conversion, same
+`Tests`/`Duration` footer shape. It currently omits Vitest's `Test Files`
+line: XCTest's own Test Suite nesting (a per-class suite wrapped in an "All
+tests"/"Selected tests" aggregate suite) hasn't been verified against real
+`xcodebuild` output, so a suite-level pass/fail count risks over-counting
+the wrapper suites as if they were their own files. `gorderly`'s equivalent
+(one line per Go package) had no such ambiguity.
 
 ## Writing tests with `spec`
 
