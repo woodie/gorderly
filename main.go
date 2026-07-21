@@ -16,7 +16,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	// parseFlags -- see wantsVersion's doc comment for why (matches
 	// xctidy's main.swift, which checks its own wantsVersion the same way).
 	if wantsVersion(args) {
-		fmt.Fprintln(stdout, gorderlyVersion)
+		_, _ = fmt.Fprintln(stdout, gorderlyVersion)
 		return 0
 	}
 
