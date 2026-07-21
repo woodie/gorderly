@@ -126,8 +126,7 @@ import (
 	. "github.com/woodie/expect"
 )
 
-// expect is the recommended lowercase alias -- one line, declared once per
-// test package (see expect's own README, "Lowercase call sites").
+// Allow all tests in this package to use lowercase expect()
 func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
 
 func TestObject(t *testing.T) {
