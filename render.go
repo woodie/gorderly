@@ -22,6 +22,7 @@ const (
 	red         = "31"
 	green       = "32"
 	brightGreen = "92"
+	yellow      = "33"
 	cyan        = "36"
 	gray        = "90"
 )
@@ -58,11 +59,6 @@ func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool)
 	var totalElapsed float64
 	var failures []failureEntry
 	var testFilesTotal, testFilesFailed int
-
-	skipColor := cyan
-	if style == StyleFv {
-		skipColor = gray
-	}
 
 	for _, pkg := range pkgs {
 		if pkg.Outcome == "no test files" {
@@ -103,10 +99,10 @@ func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool)
 					full:   append([]string{pkg.ImportPath}, humanized...),
 					output: r.Output,
 				})
-				fp("%s%s\n", indent, colorize(red, renderLeaf(style, leafName, r, true, n)))
+				fp("%s%s\n", indent, colorizeFail(style, leafName, r, n, colorize))
 			case StateSkip:
 				skipped++
-				fp("%s%s\n", indent, colorize(skipColor, renderLeaf(style, leafName, r, false, 0)))
+				fp("%s%s\n", indent, colorizeSkip(style, leafName, r, colorize))
 			default:
 				fp("%s%s\n", indent, colorizePass(style, leafName, r, colorize))
 			}
@@ -175,55 +171,57 @@ func vitestSummaryLine(label string, failed, passed, skipped, total int, coloriz
 	return fmt.Sprintf("%11s  %s (%d)", label, strings.Join(parts, " | "), total)
 }
 
-// renderLeaf covers the FAIL/SKIP text; passing leaves need their own color
-// handling since .classic keeps the glyph but .fd/.fs don't, so that one
-// case can't share this helper's plain-text shape.
-func renderLeaf(style Style, name string, r TestResult, failed bool, n int) string {
-	switch style {
-	case StyleFd:
-		if failed {
-			return fmt.Sprintf("%s (FAILED - %d)", name, n)
-		}
-		if r.State == StateSkip {
-			return fmt.Sprintf("%s (PENDING)", name)
-		}
-		return name
-	case StyleFs:
-		if failed {
-			return "✖ " + name
-		}
-		if r.State == StateSkip {
-			return "○ " + name
-		}
-		return name
-	case StyleFv:
-		if failed {
-			return fmt.Sprintf("× %s %s", name, formatVitestDuration(r.Elapsed))
-		}
-		if r.State == StateSkip {
-			return "↓ " + name
-		}
-		return "✓ " + name
-	default:
-		glyph := "✔"
-		if failed {
-			glyph = "✖"
-		} else if r.State == StateSkip {
-			glyph = "⊘"
-		}
-		return fmt.Sprintf("%s %s (%s seconds)", glyph, name, formatSeconds(r.Elapsed))
-	}
-}
+// colorizePass, colorizeFail, and colorizeSkip each cover one test state
+// across all four styles -- matching xctidy's Engine.swift labelForPassed/
+// labelForSkipped/labelForFailed function-per-state split exactly, rather
+// than one shared renderLeaf shape with a generic outer color wrap. That
+// split matters because the styles don't just differ in glyph/text: .classic
+// colors only the glyph and the elapsed-time number, leaving the name and
+// surrounding text in the terminal's default color, while .fd/.fs color the
+// whole label as one block -- a single wrap-the-whole-string helper can't
+// express both shapes at once.
 
 func colorizePass(style Style, name string, r TestResult, colorize func(string, string) string) string {
 	switch style {
+	case StyleClassic:
+		return colorize(green, "✔") + " " + name + " (" + colorize(green, formatSeconds(r.Elapsed)) + " seconds)"
 	case StyleFs:
 		return colorize(green, "✔") + " " + colorize(gray, name)
 	case StyleFv:
 		num, unit := formatVitestDurationParts(r.Elapsed)
 		return colorize(green, "✓") + " " + name + " " + colorize(green, num) + colorize(brightGreen, unit)
-	default:
-		return colorize(green, renderLeaf(style, name, r, false, 0))
+	default: // StyleFd
+		return colorize(green, name)
+	}
+}
+
+func colorizeFail(style Style, name string, r TestResult, n int, colorize func(string, string) string) string {
+	switch style {
+	case StyleClassic:
+		return colorize(red, "✖") + " " + name + fmt.Sprintf(" (FAILED - %d)", n) +
+			" (" + colorize(red, formatSeconds(r.Elapsed)) + " seconds)"
+	case StyleFs:
+		return colorize(red, fmt.Sprintf("✗ %s (FAILED - %d)", name, n))
+	case StyleFv:
+		// No inline "(FAILED - N)" -- Vitest's own tree doesn't number failures
+		// inline either; the trailing Failures: section still cross-references
+		// by number, same as xctidy's -fv.
+		return colorize(red, fmt.Sprintf("× %s %s", name, formatVitestDuration(r.Elapsed)))
+	default: // StyleFd
+		return colorize(red, fmt.Sprintf("%s (FAILED - %d)", name, n))
+	}
+}
+
+func colorizeSkip(style Style, name string, r TestResult, colorize func(string, string) string) string {
+	switch style {
+	case StyleClassic:
+		return colorize(cyan, "⊘") + " " + name + " (" + colorize(cyan, formatSeconds(r.Elapsed)) + " seconds)"
+	case StyleFs:
+		return colorize(cyan, fmt.Sprintf("- %s (SKIPPED)", name))
+	case StyleFv:
+		return colorize(gray, "↓ "+name)
+	default: // StyleFd
+		return colorize(yellow, fmt.Sprintf("%s (PENDING)", name))
 	}
 }
 
@@ -262,8 +260,8 @@ func formatVitestDurationParts(seconds float64) (number, unit string) {
 }
 
 // formatVitestDuration is formatVitestDurationParts joined back into one
-// string, for the fail-leaf case (renderLeaf), which colors its whole line
-// red at the call site in Render rather than shading the duration apart.
+// string, for the fail-leaf case (colorizeFail's StyleFv branch), which
+// colors its whole label red rather than shading the duration apart.
 func formatVitestDuration(seconds float64) string {
 	number, unit := formatVitestDurationParts(seconds)
 	return number + unit

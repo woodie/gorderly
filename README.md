@@ -62,6 +62,19 @@ wraps Vitest's own output to get there, it just matches it. This flag is
 gorderly-specific, not part of the shared flag surface with `xctidy`
 (there's no Vitest equivalent on the XCTest side).
 
+`gorderly --version`/`gorderly -v` prints the installed version and exits
+immediately, without waiting on stdin -- matching `xctidy`'s own
+`--version`/`-v`.
+
+## Color output
+
+Color is on by default and auto-disables when stdout isn't a real terminal
+(piped to a file or another process) or when `NO_COLOR` is set in the
+environment -- matching `xctidy`'s own `isatty` check. The classic, `-fd`,
+and `-fs` styles color only the glyph (and, for classic, the elapsed-time
+number) rather than the whole line, so a test's name always renders in the
+terminal's own default color.
+
 ## Writing tests with `spec`
 
 [`sclevine/spec`](https://github.com/sclevine/spec) gives you `when`/`it`
@@ -182,3 +195,10 @@ make test    # verbose, dogfoods gorderly on its own suite
 make lint    # golangci-lint
 make check   # terse: silent on success, full log on failure
 ```
+
+Cutting a release: bump `gorderlyVersion` in `version.go` by hand before
+tagging. Unlike `xctidy`'s `Version.swift` (regenerated from `git describe`
+at build time), `gorderly`'s primary install path is `go install
+github.com/woodie/gorderly@latest` -- a module-proxy fetch with no `.git`
+metadata to describe -- so the version string has to already be correct in
+the committed source at the tagged commit.

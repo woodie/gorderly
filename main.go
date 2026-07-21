@@ -12,6 +12,14 @@ func main() {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	// Checked before the stdin-reading loop, not as a switch case in
+	// parseFlags -- see wantsVersion's doc comment for why (matches
+	// xctidy's main.swift, which checks its own wantsVersion the same way).
+	if wantsVersion(args) {
+		fmt.Fprintln(stdout, gorderlyVersion)
+		return 0
+	}
+
 	style, passthrough, err := parseFlags(args)
 	if err != nil {
 		warn(stderr, err)
@@ -41,7 +49,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 	}
 
-	colorEnabled := os.Getenv("NO_COLOR") == ""
+	colorEnabled := os.Getenv("NO_COLOR") == "" && isTerminal(stdout)
 	failed, err := Render(pkgs, style, stdout, colorEnabled)
 	if err != nil {
 		warn(stderr, err)
@@ -55,6 +63,22 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func warn(w io.Writer, err error) {
 	_, _ = fmt.Fprintf(w, "gorderly: %v\n", err)
+}
+
+// isTerminal reports whether w is a real terminal, using the same
+// os.ModeCharDevice check openInput already applies to stdin -- matching
+// xctidy's isatty(fileno(stdout)) check, so color auto-disables when stdout
+// is redirected to a file or another process, not just when NO_COLOR is set.
+func isTerminal(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	stat, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return stat.Mode()&os.ModeCharDevice != 0
 }
 
 func parseFlags(args []string) (style Style, passthrough []string, err error) {

@@ -72,6 +72,37 @@ func TestRender(t *testing.T) {
 				expect(out, t).To(Contain("Failures:"))
 				expect(out, t).To(Contain("math_test.go:12: got 3, want 4"))
 			})
+
+			it("marks the failing leaf with a FAILED cross-reference to the Failures section", func() {
+				expect(out, t).To(Contain("adds a negative number (FAILED - 1) (0.0020 seconds)"))
+			})
+
+			it("marks the skipped leaf with its elapsed time and no SKIPPED text", func() {
+				expect(out, t).To(Contain("⊘ is skipped for now (0.0000 seconds)"))
+				expect(out, t).NotTo(Contain("SKIPPED"))
+			})
+		})
+
+		context("classic style with color enabled", func() {
+			var out string
+
+			before(func() {
+				var buf bytes.Buffer
+				_, _ = Render(samplePackages(), StyleClassic, &buf, true)
+				out = buf.String()
+			})
+
+			it("colors only the glyph and the elapsed time on a passing leaf, not the name", func() {
+				expect(out, t).To(Contain("\033[32m✔\033[0m adds two positive numbers (\033[32m0.0010\033[0m seconds)"))
+			})
+
+			it("colors only the glyph and the elapsed time on a failing leaf, not the name or FAILED marker", func() {
+				expect(out, t).To(Contain("\033[31m✖\033[0m adds a negative number (FAILED - 1) (\033[31m0.0020\033[0m seconds)"))
+			})
+
+			it("colors only the glyph and the elapsed time on a skipped leaf, not the name", func() {
+				expect(out, t).To(Contain("\033[36m⊘\033[0m is skipped for now (\033[36m0.0000\033[0m seconds)"))
+			})
 		})
 
 		context("every test passes", func() {
@@ -131,6 +162,13 @@ func TestRender(t *testing.T) {
 			it("labels the skipped leaf PENDING", func() {
 				expect(out, t).To(Contain("(PENDING)"))
 			})
+
+			it("colors pending yellow, not cyan, when a TTY", func() {
+				var buf bytes.Buffer
+				_, _ = Render(samplePackages(), StyleFd, &buf, true)
+				expect(buf.String(), t).To(Contain("\033[33m"))
+				expect(buf.String(), t).NotTo(Contain("\033[36m"))
+			})
 		})
 
 		context("in fs style", func() {
@@ -144,6 +182,14 @@ func TestRender(t *testing.T) {
 
 			it("uses a checkmark for the passing leaf", func() {
 				expect(out, t).To(Contain("✔"))
+			})
+
+			it("uses a cross and keeps the FAILED cross-reference for the failing leaf", func() {
+				expect(out, t).To(Contain("✗ adds a negative number (FAILED - 1)"))
+			})
+
+			it("uses a dash and keeps the SKIPPED marker for the skipped leaf", func() {
+				expect(out, t).To(Contain("- is skipped for now (SKIPPED)"))
 			})
 		})
 
