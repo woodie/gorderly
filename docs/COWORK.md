@@ -317,5 +317,46 @@ go run . . | cat        # confirm color auto-disables when stdout isn't a TTY
 go run . .               # confirm color still shows in a real terminal
 ```
 
+## v0.3.0 → v0.3.1: an `errcheck` failure, tagged before `make check` ran
+
+The tag/push handoff above went out (`v0.3.0`, `fdbd425`) before `make
+check` had actually been run -- Cowork's own no-Go-toolchain limitation
+means the sandbox can never confirm this itself, but the tag/push
+instructions still should have waited on the user's real `make check`
+result first rather than going out immediately after committing. The user
+ran it and hit a real `errcheck` violation: the new `--version` handler
+(`fmt.Fprintln(stdout, gorderlyVersion)`) didn't check its return value,
+unlike every other write in `main.go` (`warn`'s `_, _ = fmt.Fprintf(...)`).
+
+Fixed with `_, _ = fmt.Fprintln(...)`, matching the existing convention.
+Since `v0.3.0`/`fdbd425` had *already been pushed* to `origin/main` by the
+user in between the tag/push handoff and the lint report (not stated
+explicitly at the time, only inferred afterward from `git fetch` +
+`git log --oneline origin/main`), amending that commit locally created a
+real fork: local `main` became a sibling of `origin/main`, not a
+descendant, so the next push was rejected as non-fast-forward, and
+re-tagging `v0.3.0` to point at the amended commit collided with the tag
+already on the remote ("already exists"). Recovered by `git reset --hard
+origin/main` (discarding the amend), reapplying the one-line fix as a
+*new* forward commit, and tagging that as `v0.3.1` instead of trying to
+force anything -- `main` then fast-forwarded cleanly and the push
+succeeded, confirmed via `git merge-base --is-ancestor origin/main HEAD`
+before pushing. Local `v0.3.0` was also re-pointed back at `fdbd425` to
+match what's actually on GitHub (verified directly via
+`github.com/woodie/gorderly/releases/tag/v0.3.0`, not just local git
+state), rather than left dangling at the abandoned amended commit.
+
+Lesson generalized into `~/workspace/woodie/docs/COWORK.md`'s "Tagging
+releases" section: run `check`, confirm clean, *then* tag, *then* tell the
+user to push -- and never amend a commit once there's any chance it's
+already reached the remote; make a new forward commit instead.
+
+`docs/releases/v0.3.1.md` covers the errcheck fix on its own; the `gh
+release create` handoff for GitHub's actual Releases feature (as opposed
+to the tag pages GitHub renders automatically from annotated-tag messages)
+consolidates `v0.3.0` + `v0.3.1`'s notes into one `v0.3.1` release, at the
+user's choice, since `v0.3.0` was superseded within the same session and
+never really shipped to anyone as a standalone release.
+
 Tagged `v0.3.0` after the user confirmed. See `docs/releases/v0.3.0.md`
 for the release notes.
