@@ -33,3 +33,6 @@ go.work.sum
 # .vscode/
 *.swp
 .*.swp
+
+# macOS
+.DS_Store
