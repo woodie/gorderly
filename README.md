@@ -127,9 +127,11 @@ nesting, the `subject` pattern, mocking and stubbing -- see
 ## Development
 
 ```
-make test    # verbose, dogfoods gorderly on its own suite
-make lint    # golangci-lint
-make check   # terse: silent on success, full log on failure
+make build    # go build -o gorderly
+make install  # builds, then moves the binary to ~/go/bin/
+make test     # verbose, dogfoods gorderly on its own suite
+make lint     # golangci-lint
+make check    # terse: silent on success, full log on failure
 ```
 
 Cutting a release: bump `gorderlyVersion` in `version.go` by hand before

@@ -1,4 +1,10 @@
-.PHONY: lint test check
+.PHONY: build install lint test check
+
+build:
+	go build -o gorderly
+
+install: build
+	mv gorderly ~/go/bin/
 
 # lint and test are always verbose. check is terse: suppress everything on
 # success, dump the full log on any failure -- matching the intent of every
@@ -11,7 +17,7 @@ lint:
 # Verbose on purpose, and dogfoods gorderly on its own suite -- the same
 # self-hosting xctidy does against its own Quick/Nimble specs.
 test:
-	go run . -fd ./...
+	go run . ./...
 
 # Terser than `test` on purpose: plain `go test` has no per-test dot mode of
 # its own (unlike ginkgo's free dots, which `humane`'s check target relies
