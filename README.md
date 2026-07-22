@@ -88,101 +88,16 @@ tests"/"Selected tests" aggregate suite) hasn't been verified against real
 the wrapper suites as if they were their own files. `gorderly`'s equivalent
 (one line per Go package) had no such ambiguity.
 
-## Writing tests with `spec`
+## Writing tests
 
-[`sclevine/spec`](https://github.com/sclevine/spec) gives you `when`/`it`
-structure with real `Before`/`After` hooks -- it's built entirely on `t.Run`,
-so its raw `go test -v` output is exactly what `gorderly` already renders.
-`spec` got test organization and per-`it` freshness right years ago; it just
-never had a reporter to match. `gorderly` gives it one for free, since both
-tools only ever speak plain `go test -v`. This is the minimal shape -- plain
-upstream `spec`, no `expect`, no fork -- for a project that just wants
-`gorderly`'s renderer with no other opinions. `gorderly`'s own tests
-(`parse_test.go`, `render_test.go`) have since moved to the fuller shape
-below ("The full toolchain") -- see that section for what they actually
-look like today.
-
-```go
-spec.Run(t, "GoodTimes", func(t *testing.T, when spec.G, it spec.S) {
-	when("today is Friday (5)", func() {
-		it.Before(func() { gt = newGoodTimes(5) })
-
-		it("computes tomorrow as Saturday (6)", func() {
-			if gt.tomorrowDotw() != 6 {
-				t.Errorf("tomorrowDotw = %d, want 6", gt.tomorrowDotw())
-			}
-		})
-	})
-})
-```
-Pipe that through `gorderly -fd` and it renders as a real, deduped, nested tree.
-
-## The full toolchain: `spec` + `expect` + `gorderly`
-
-Each piece stays independent -- `gorderly` only ever needs `go test -v`'s
-raw output, `spec` needs no assertion library, `expect` needs no BDD
-framework -- but they're built to be used together, and here's what that
-looks like in one real suite: plain
-[`sclevine/spec`](https://github.com/sclevine/spec) for structure (no
-fork -- `before`/`after`/`context` are one local line, see `spec`'s own
-README), [`github.com/woodie/expect`](https://github.com/woodie/expect)
-for Gomega-style matchers against plain `*testing.T`, and `gorderly` to
-render the result.
-
-```go
-package myapp_test
-
-import (
-	"testing"
-
-	"github.com/sclevine/spec"
-	. "github.com/woodie/expect"
-)
-
-// Allow all tests in this package to use lowercase expect()
-func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
-
-func TestObject(t *testing.T) {
-	spec.Run(t, "Object", func(t *testing.T, describe spec.G, it spec.S) {
-		context, before, after := describe, it.Before, it.After
-
-		var obj *myapp.Object
-
-		before(func() { obj = myapp.NewObject(t.Context()) })
-		after(func() { obj.Close() })
-
-		describe("DoThing", func() {
-			context("with a temp dir", func() {
-				before(func() { obj.Dir = t.TempDir() })
-
-				it("succeeds", func() {
-					expect(obj.DoThing(), t).To(Succeed())
-				})
-			})
-		})
-	})
-}
-```
-
-`TestObject` passes its closure straight to `spec.Run` -- no separate
-named suite function, so there's only one place to look, not two. See
-`gorderly`'s own `parse_test.go`/`render_test.go` for this pattern used
-against a real parser, not a sketch. Every identifier that reads
-lowercase here does so for its own reason: `describe`/`it` are just this
-closure's own parameter names (`spec.Run` hands them in positionally, so
-nothing stops you naming them however you like); `context`/`before`/
-`after` are the same two values under three names, assigned once at the
-top of the closure (`context, before, after := describe, it.Before,
-it.After`) instead of called as `describe.AsContext()`/`it.Before(...)`/
-`it.After(...)` at every site; `t.Context()`/`t.TempDir()` are the
-closure's own `t` parameter, reachable from inside `before`/`after` by
-ordinary closure capture, no special method needed; and `expect` is a
-one-line local alias standing in for `expect`'s own capitalized `Expect`,
-since Go requires a dot-imported name to stay capitalized but never
-requires that of a parameter or local variable. Pipe the whole thing
-through `go test -v ./... | gorderly -fd` and it renders exactly like the
-`spec`-only example above -- `gorderly` never knows or cares that
-`expect` was involved, it only ever sees `go test -v`'s own output.
+`gorderly` only ever needs `go test -v`'s raw output -- it renders
+whatever nesting your tests already produce, `spec`-based or not. For how
+we actually write those tests -- `spec` for structure and lifecycle
+hooks, [`expect`](https://github.com/woodie/expect) for matchers, context
+nesting, the `subject` pattern, mocking and stubbing -- see
+[docs/FRAMEWORK.md](docs/FRAMEWORK.md). `gorderly`'s own tests
+(`parse_test.go`, `render_test.go`, `main_test.go`, `version_test.go`,
+`config_test.go`) are real examples of that shape, not just a sketch.
 
 ## Limitations
 
@@ -199,6 +114,15 @@ through `go test -v ./... | gorderly -fd` and it renders exactly like the
   (e.g. `0.00s`) -- fast subtests will often show a flat `0ms` where Vitest's
   own JS timers would show `2ms`/`4ms`. This is a ceiling in `go test`
   itself, not something `-fv` can recover.
+- A literal `/` in a `describe`/`context`/`it` string is indistinguishable
+  from a nesting boundary once it reaches `go test -v`'s output -- `t.Run`
+  uses an unescaped `/` as both the subtest hierarchy separator and the
+  `-run`/`-bench` regex-splitting delimiter, and [Go's own docs are
+  explicit](https://go.dev/blog/subtests) that a literal `/` in a subtest
+  name isn't safe. Not something `gorderly` (or any tool parsing `go test`'s
+  output) can recover after the fact -- see
+  [docs/FRAMEWORK.md](docs/FRAMEWORK.md#a-literal--in-a-description-string)
+  for the fix on the spec-author side.
 
 ## Development
 
