@@ -6,7 +6,7 @@ package main
 // no .git metadata to describe, so the version has to already be the right
 // string in the committed source at tag time rather than regenerated from a
 // local clone at build time.
-const gorderlyVersion = "0.3.1"
+const gorderlyVersion = "0.3.2"
 
 // wantsVersion mirrors xctidy's own wantsVersion: checked before reading
 // stdin, so a bare `gorderly --version` doesn't hang waiting for piped input
