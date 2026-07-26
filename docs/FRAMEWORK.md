@@ -137,7 +137,12 @@ in the shared `before`, and each `it` only states what it's checking.
 Go has no `subject`/`let` keyword, but the same idea translates directly:
 declare whatever `subject` depends on as plain locals in the enclosing
 `describe`, define `subject` as a closure over them, and let a `before` at
-whichever level actually needs to change one set it.
+whichever level actually needs to change one set it. This closure shape is
+a workaround for `spec` having no `justBeforeEach` hook, not the ideal --
+where one exists (`xctidy`'s, `kotidy`'s own `docs/FRAMEWORK.md`), the
+convention is to assign straight into a shared `var` inside
+`justBeforeEach`/`beforeEach` instead, since that already reruns fresh
+before every `it`.
 
 ```go
 describe("HumanSize", func() {
