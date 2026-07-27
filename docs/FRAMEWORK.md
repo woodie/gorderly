@@ -93,6 +93,32 @@ it renders as a floating slash without ever being the ASCII `/` byte
 `t.Run` treats specially, so it reads naturally while staying completely
 outside `go test`'s own hierarchy syntax.
 
+## Skipping and focusing tests
+
+`describe`/`context` (both aliases for `spec.G`) and `it` (`spec.S`) each have
+`.Pend`/`.Focus` methods -- `sclevine/spec`'s own equivalent of RSpec's/Quick's
+`xdescribe`/`xit`/`fdescribe`/`fit`, just spelled as method calls instead of a
+letter prefix, since Go has no bare-word `x`/`f` naming convention to lean on:
+
+```go
+describe.Pend("still needs a real fixture", func() {
+    // ...none of the code in this closure will run.
+})
+
+it.Pend("returns the cached value", func() {
+    // ...this one spec is skipped; siblings still run.
+})
+
+describe.Focus("the bug we're chasing right now", func() {
+    // ...only this group (and other focused specs) run; everything else is skipped.
+})
+```
+
+`it.Focus`/`describe.Focus` accept the same ordering options (`spec.Random()`,
+`spec.Parallel()`, ...) as a normal call; `.Pend` ignores any options passed to
+it. See `xctidy`'s and `kotidy`'s own `docs/FRAMEWORK.md` for the Swift/Kotlin
+equivalents (`xit`/`fit`, spelled as literal keywords there instead of methods).
+
 ## Nesting context so it's available to every sub-test
 
 `before` reruns fresh before each `it` -- parent context's `before` first,
