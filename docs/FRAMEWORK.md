@@ -27,6 +27,13 @@ separate reporter or JSON round-trip required. That's also *why*
 `gorderly` exists as a plain-text renderer rather than a Ginkgo-only tool
 -- it works on any suite built on stdlib `testing`, `spec`-based or not.
 
+For a team already committed to Ginkgo rather than migrating to `spec`,
+[`gomeleon`](https://github.com/woodie/gomeleon) (formerly `ginkgo-fd`)
+renders the same RSpec-style output from Ginkgo's own JSON report. It's
+not what this account runs on its own Go projects, though -- `gorderly`,
+`lambada`, and `humane` all use `spec`+`expect`; `gomeleon` exists for the
+Ginkgo ecosystem specifically, not as an alternative to reach for here.
+
 ## The pieces
 
 - **`spec`** gives you `describe`/`context`/`it` structure and `before`/

@@ -116,7 +116,7 @@ func parseFlags(args []string) (style Style, passthrough []string, err error) {
 // openInput reads piped stdin directly (the xctidy-style "raw output piped
 // straight in" path) when nothing is piped in via stdin AND no package
 // path was given it instead shells out to `go test -v` itself, the
-// ginkgo-fd-style wrapper convenience path, so `gorderly -fd .` and
+// gomeleon-style wrapper convenience path, so `gorderly -fd .` and
 // `go test -v ./... | gorderly -fd` both work. wait is nil for the stdin path.
 func openInput(stdin io.Reader, passthrough []string, stderr io.Writer) (io.Reader, func() error, error) {
 	if f, ok := stdin.(*os.File); ok && len(passthrough) == 0 {

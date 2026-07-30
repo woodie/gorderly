@@ -227,12 +227,12 @@ func colorizeSkip(style Style, name string, r TestResult, colorize func(string, 
 
 // humanize reverses go test's own space-to-underscore substitution in
 // t.Run names -- known-imprecise for names with genuine underscores, same
-// tradeoff xctidy/ginkgo-fd accept for their own comma/prose heuristics.
+// tradeoff xctidy/gomeleon accept for their own comma/prose heuristics.
 func humanize(s string) string {
 	return strings.ReplaceAll(s, "_", " ")
 }
 
-// Matches ginkgo-fd's/xctidy's own precision split: sub-second runs (the
+// Matches gomeleon's/xctidy's own precision split: sub-second runs (the
 // overwhelming majority of unit tests) get enough decimals to be non-zero,
 // anything slower rounds to hundredths instead of a false-precision tail.
 func formatSeconds(seconds float64) string {
