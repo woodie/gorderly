@@ -1,7 +1,9 @@
 # Writing tests: `spec` + `expect`
 
 How we structure Go tests -- structural functions and lifecycle hooks
-from [`sclevine/spec`](https://github.com/sclevine/spec), matchers from
+from [`woodie/spec`](https://github.com/woodie/spec) (a fork of
+[`sclevine/spec`](https://github.com/sclevine/spec); see that fork's own
+README for why it exists), matchers from
 [`expect`](https://github.com/woodie/expect), and `gorderly` rendering
 whatever `go test -v` prints as a real tree. Each piece is independent --
 `spec` needs no assertion library, `expect` needs no BDD framework,
@@ -33,21 +35,25 @@ renders the same RSpec-style output from Ginkgo's own JSON report -- a
 separate tool for the Ginkgo ecosystem specifically, not an alternative to
 `spec`+`expect` for a project starting fresh.
 
-One real gap worth naming directly: Ginkgo has
+One real gap, now closed: Ginkgo has
 [`JustBeforeEach`](https://onsi.github.io/ginkgo/#separating-creation-and-configuration-justbeforeeach)
 built in -- a hook that runs after every `BeforeEach` at every nesting
 level, immediately before the test itself, so what varies (inputs) and the
 action under test can be declared at different levels instead of
-duplicated per `context`. `spec` doesn't have an equivalent, and it isn't
-a temporary gap -- `spec` stays deliberately minimal (structure plus
-`before`/`after`, nothing more), so the "subject" pattern below is the
-direct, permanent answer to the same problem `JustBeforeEach` solves, built
-out of a plain closure instead of a dedicated hook.
+duplicated per `context`. Upstream `sclevine/spec` never had an
+equivalent; `woodie/spec` adds `it.JustBeforeEach` directly (alongside
+`it.BeforeEach`/`it.AfterEach`, the real names for what `it.Before`/
+`it.After` already did -- those two still work, just deprecated). The
+"subject" pattern below predates that addition and still works exactly
+the same way -- a plain closure gets to the same place -- but
+`it.JustBeforeEach` is now the more direct route when a hook, not a
+closure invoked explicitly in each `it`, is what you want.
 
 ## The pieces
 
-- **`spec`** gives you `describe`/`context`/`it` structure and `before`/
-  `after` lifecycle hooks -- no assertions of its own.
+- **`spec`** gives you `describe`/`context`/`it` structure and
+  `BeforeEach`/`AfterEach`/`JustBeforeEach` lifecycle hooks -- no
+  assertions of its own.
 - **`expect`** gives you Gomega-style matchers (`Equal`, `Contain`,
   `Succeed`, ...) against a plain `*testing.T`/`testing.TB` -- no BDD
   framework required, works with table-driven tests just as well.
@@ -58,17 +64,27 @@ out of a plain closure instead of a dedicated hook.
 
 `spec.Run` hands your suite closure `describe`/`context`/`it` positionally
 -- they're just parameter names, so name them however reads best. The
-convention across these projects: alias `it.Before`/`it.After` to
-`before`/`after` once at the top of the closure, so the whole suite reads
-in lowercase RSpec-style vocabulary instead of `it.Before(...)`/
-`it.After(...)` at every call site:
+convention across these projects: alias `describe` to `context` once at
+the top of the closure, for nested groups that read better as "context"
+than "describe":
 
 ```go
 spec.Run(t, "Object", func(t *testing.T, describe spec.G, it spec.S) {
-    context, before, after := describe, it.Before, it.After
+    context := describe
     // ...
 })
 ```
+
+`it`'s hook methods (`it.BeforeEach`/`it.AfterEach`/`it.JustBeforeEach`)
+are called qualified, not aliased to bare lowercase locals. Earlier
+versions of this convention aliased `it.Before`/`it.After` to `before`/
+`after`, but with three hook names to alias instead of two
+(`beforeEach`/`afterEach`/`justBeforeEach`) the line got long and
+cluttered, and abbreviating it (`it.BE`/`it.JBE`) just traded one kind of
+ugly for another. `it` already reads visually distinct from the lowercase
+`describe`/`context` structural vocabulary, so `it.BeforeEach(...)` etc.
+called qualified doesn't clash the way a qualified `expect.Expect(...)`
+would (the reason `expect` itself is dot-imported, below).
 
 Pair this with a one-line lowercase alias for `expect`'s own `Expect`
 (required because a dot-imported name has to stay capitalized, but a
@@ -138,10 +154,10 @@ equivalents (`xit`/`fit`, spelled as literal keywords there instead of methods).
 
 ## Nesting context so it's available to every sub-test
 
-`before` reruns fresh before each `it` -- parent context's `before` first,
-then the child's -- so a value set up at one nesting level is visible
-(and freshly rebuilt) for every `it` beneath it, with no test-to-test
-pollution:
+`BeforeEach` reruns fresh before each `it` -- parent context's
+`BeforeEach` first, then the child's -- so a value set up at one nesting
+level is visible (and freshly rebuilt) for every `it` beneath it, with no
+test-to-test pollution:
 
 ```go
 context("a transcript mixes pass, fail, and skip", func() {
@@ -149,7 +165,7 @@ context("a transcript mixes pass, fail, and skip", func() {
     var err error
     var pkg PackageResult
 
-    before(func() {
+    it.BeforeEach(func() {
         pkgs, err = Parse(strings.NewReader(mixedTranscript))
         if len(pkgs) > 0 {
             pkg = pkgs[0]
@@ -173,21 +189,15 @@ context("a transcript mixes pass, fail, and skip", func() {
 
 (`gorderly`'s own `parse_test.go`.) Every `it` reads `pkgs`/`err`/`pkg`
 without redeclaring or re-running the parse itself -- that happens once,
-in the shared `before`, and each `it` only states what it's checking.
+in the shared `BeforeEach`, and each `it` only states what it's checking.
 
-### The "subject" pattern
+### The "subject" pattern (and `it.JustBeforeEach` as the more direct route)
 
 Go has no `subject`/`let` keyword, but the same idea translates directly:
 declare whatever `subject` depends on as plain locals in the enclosing
-`describe`, define `subject` as a closure over them, and let a `before` at
-whichever level actually needs to change one set it. This closure shape is
-`spec`'s own answer to the `JustBeforeEach` gap named above, not a
-stand-in for a hook that's just missing for now -- where a real
-`justBeforeEach` hook does exist (`kwick`'s, for Kotest; see `kotidy`'s own
-`docs/FRAMEWORK.md`), the convention there is to assign straight into a
-shared `var` inside `justBeforeEach`/`beforeEach` instead, since that
-already reruns fresh before every `it`. Both get to the same place; `spec`
-just does it with a closure instead of a dedicated extension point.
+`describe`, define `subject` as a closure over them, and let a
+`BeforeEach` at whichever level actually needs to change one set it. This
+predates `it.JustBeforeEach` and still works exactly the same way:
 
 ```go
 describe("FileSize", func() {
@@ -195,14 +205,14 @@ describe("FileSize", func() {
     subject := func() string { return FileSize(bytes) }
 
     context("with 0 bytes", func() {
-        before(func() { bytes = 0 })
+        it.BeforeEach(func() { bytes = 0 })
         it("formats as Zero KB", func() {
             expect(subject(), t).To(Equal("Zero KB"))
         })
     })
 
     context("with a gigabyte-scale value", func() {
-        before(func() { bytes = 5240000000 })
+        it.BeforeEach(func() { bytes = 5240000000 })
         it("keeps 2 decimal places at 3 significant figures (not truncated to 1)", func() {
             expect(subject(), t).To(Equal("5.24 GB"))
         })
@@ -211,9 +221,41 @@ describe("FileSize", func() {
 ```
 
 `subject` doesn't run until called, so `subject()` inside each `it` always
-reflects whatever the `before` chain most recently set. The same shape
+reflects whatever the `BeforeEach` chain most recently set. The same shape
 extends further when a `subject` closes over several independently-
 overridable inputs instead of just one.
+
+With `it.JustBeforeEach` (added in `woodie/spec` v0.2.0), the same example
+reads without an explicit `subject()` call at each `it`:
+
+```go
+describe("FileSize", func() {
+    var bytes int64
+    var result string
+    it.JustBeforeEach(func() { result = FileSize(bytes) })
+
+    context("with 0 bytes", func() {
+        it.BeforeEach(func() { bytes = 0 })
+        it("formats as Zero KB", func() {
+            expect(result, t).To(Equal("Zero KB"))
+        })
+    })
+
+    context("with a gigabyte-scale value", func() {
+        it.BeforeEach(func() { bytes = 5240000000 })
+        it("keeps 2 decimal places at 3 significant figures (not truncated to 1)", func() {
+            expect(result, t).To(Equal("5.24 GB"))
+        })
+    })
+})
+```
+
+Both get to the same place. `it.JustBeforeEach` is the more direct route
+when the action under test is a single call that should always run right
+before the spec; the `subject` closure still reads better when a test
+wants to call it multiple times or under varying conditions within a
+single `it`. This matches `kwick`'s own `JustBeforeEachExtension` for
+Kotest -- see `kotidy`'s own `docs/FRAMEWORK.md`.
 
 ## Mocking and stubbing
 
@@ -222,11 +264,11 @@ overridable inputs instead of just one.
 Not everything worth stubbing needs a full interface and fake
 implementation. When a package depends on exactly one thing -- a
 directory path, a single collaborator -- overriding the package-level
-variable directly in a `before` is often simpler and just as safe, since
-`before` reruns fresh for every `it`:
+variable directly in a `BeforeEach` is often simpler and just as safe,
+since `BeforeEach` reruns fresh for every `it`:
 
 ```go
-before(func() { workDir = t.TempDir() }) // stub implementation
+it.BeforeEach(func() { workDir = t.TempDir() }) // stub implementation
 ```
 
 The `// stub implementation` comment is a deliberate marker -- it tells a
@@ -295,15 +337,15 @@ func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
 
 func TestObject(t *testing.T) {
     spec.Run(t, "Object", func(t *testing.T, describe spec.G, it spec.S) {
-        context, before, after := describe, it.Before, it.After
+        context := describe
 
         var obj *myapp.Object
-        before(func() { obj = myapp.NewObject(t.Context()) })
-        after(func() { obj.Close() })
+        it.BeforeEach(func() { obj = myapp.NewObject(t.Context()) })
+        it.AfterEach(func() { obj.Close() })
 
         describe("DoThing", func() {
             context("with a temp dir", func() {
-                before(func() { obj.Dir = t.TempDir() })
+                it.BeforeEach(func() { obj.Dir = t.TempDir() })
 
                 it("succeeds", func() {
                     expect(obj.DoThing(), t).To(Succeed())
@@ -319,3 +361,12 @@ real, deduped, nested tree -- `gorderly` never knows or cares that
 `expect` was involved, it only ever sees `go test -v`'s own output. See
 `gorderly`'s own `parse_test.go`/`render_test.go` for this pattern used
 against a real parser, not a sketch.
+
+The import path stays `github.com/sclevine/spec` -- `woodie/spec` keeps
+upstream's own module path unchanged, so picking up the fork's
+`BeforeEach`/`AfterEach`/`JustBeforeEach` is a `go.mod` `replace`
+directive, not an import change:
+
+```
+replace github.com/sclevine/spec => github.com/woodie/spec v0.2.0
+```
