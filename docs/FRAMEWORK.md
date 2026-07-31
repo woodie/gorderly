@@ -33,6 +33,17 @@ renders the same RSpec-style output from Ginkgo's own JSON report -- a
 separate tool for the Ginkgo ecosystem specifically, not an alternative to
 `spec`+`expect` for a project starting fresh.
 
+One real gap worth naming directly: Ginkgo has
+[`JustBeforeEach`](https://onsi.github.io/ginkgo/#separating-creation-and-configuration-justbeforeeach)
+built in -- a hook that runs after every `BeforeEach` at every nesting
+level, immediately before the test itself, so what varies (inputs) and the
+action under test can be declared at different levels instead of
+duplicated per `context`. `spec` doesn't have an equivalent, and it isn't
+a temporary gap -- `spec` stays deliberately minimal (structure plus
+`before`/`after`, nothing more), so the "subject" pattern below is the
+direct, permanent answer to the same problem `JustBeforeEach` solves, built
+out of a plain closure instead of a dedicated hook.
+
 ## The pieces
 
 - **`spec`** gives you `describe`/`context`/`it` structure and `before`/
@@ -170,11 +181,13 @@ Go has no `subject`/`let` keyword, but the same idea translates directly:
 declare whatever `subject` depends on as plain locals in the enclosing
 `describe`, define `subject` as a closure over them, and let a `before` at
 whichever level actually needs to change one set it. This closure shape is
-a workaround for `spec` having no `justBeforeEach` hook, not the ideal --
-where one exists (`xctidy`'s, `kotidy`'s own `docs/FRAMEWORK.md`), the
-convention is to assign straight into a shared `var` inside
-`justBeforeEach`/`beforeEach` instead, since that already reruns fresh
-before every `it`.
+`spec`'s own answer to the `JustBeforeEach` gap named above, not a
+stand-in for a hook that's just missing for now -- where a real
+`justBeforeEach` hook does exist (`kwick`'s, for Kotest; see `kotidy`'s own
+`docs/FRAMEWORK.md`), the convention there is to assign straight into a
+shared `var` inside `justBeforeEach`/`beforeEach` instead, since that
+already reruns fresh before every `it`. Both get to the same place; `spec`
+just does it with a closure instead of a dedicated extension point.
 
 ```go
 describe("FileSize", func() {
