@@ -1,16 +1,16 @@
 # Writing tests: `spec` + `expect`
 
-How we structure Go tests across these projects (`gorderly` itself,
-[`lambada`](https://github.com/woodie/lambada),
-[`humane`](https://github.com/woodie/humane)) -- structural functions and
-lifecycle hooks from [`sclevine/spec`](https://github.com/sclevine/spec),
-matchers from [`expect`](https://github.com/woodie/expect), and
-`gorderly` rendering whatever `go test -v` prints as a real tree. Each
-piece is independent -- `spec` needs no assertion library, `expect` needs
-no BDD framework, `gorderly` only ever needs `go test -v`'s raw text --
-but they're built to be used together, and this doc shows what that looks
-like in real suites. The Swift side of this pairing (`xctidy`, `zouk`,
-`next-caltrain-swift`) follows the same shape with different tools -- see
+How we structure Go tests -- structural functions and lifecycle hooks
+from [`sclevine/spec`](https://github.com/sclevine/spec), matchers from
+[`expect`](https://github.com/woodie/expect), and `gorderly` rendering
+whatever `go test -v` prints as a real tree. Each piece is independent --
+`spec` needs no assertion library, `expect` needs no BDD framework,
+`gorderly` only ever needs `go test -v`'s raw text -- but they're built to
+be used together, and this doc shows what that looks like in real suites.
+Examples below use a generic domain (`FileSize`, `Object`, an HTTP
+middleware) rather than any one project's real code, so the pattern reads
+the same regardless of what you're actually testing. The Swift side of
+this pairing (`xctidy`) follows the same shape with different tools -- see
 [`xctidy`'s own docs/FRAMEWORK.md](https://github.com/woodie/xctidy/blob/main/docs/FRAMEWORK.md)
 if you're working on that side instead. For `expect`'s full matcher list,
 see [its README](https://github.com/woodie/expect#readme).
@@ -29,10 +29,9 @@ separate reporter or JSON round-trip required. That's also *why*
 
 For a team already committed to Ginkgo rather than migrating to `spec`,
 [`gomeleon`](https://github.com/woodie/gomeleon) (formerly `ginkgo-fd`)
-renders the same RSpec-style output from Ginkgo's own JSON report. It's
-not what this account runs on its own Go projects, though -- `gorderly`,
-`lambada`, and `humane` all use `spec`+`expect`; `gomeleon` exists for the
-Ginkgo ecosystem specifically, not as an alternative to reach for here.
+renders the same RSpec-style output from Ginkgo's own JSON report -- a
+separate tool for the Ginkgo ecosystem specifically, not an alternative to
+`spec`+`expect` for a project starting fresh.
 
 ## The pieces
 
@@ -178,13 +177,13 @@ convention is to assign straight into a shared `var` inside
 before every `it`.
 
 ```go
-describe("HumanSize", func() {
+describe("FileSize", func() {
     var bytes int64
-    subject := func() string { return humane.HumanSize(bytes) }
+    subject := func() string { return FileSize(bytes) }
 
     context("with 0 bytes", func() {
         before(func() { bytes = 0 })
-        it("formats as Zero KB, matching ByteCountFormatter's own wording", func() {
+        it("formats as Zero KB", func() {
             expect(subject(), t).To(Equal("Zero KB"))
         })
     })
@@ -198,10 +197,10 @@ describe("HumanSize", func() {
 })
 ```
 
-(`humane`'s own `size_test.go` -- see also `time_test.go` for a `subject`
-closing over several independently-overridable inputs, not just one.)
 `subject` doesn't run until called, so `subject()` inside each `it` always
-reflects whatever the `before` chain most recently set.
+reflects whatever the `before` chain most recently set. The same shape
+extends further when a `subject` closes over several independently-
+overridable inputs instead of just one.
 
 ## Mocking and stubbing
 
@@ -214,14 +213,12 @@ variable directly in a `before` is often simpler and just as safe, since
 `before` reruns fresh for every `it`:
 
 ```go
-before(func() { attachmentDir = t.TempDir() }) // stub implementation
+before(func() { workDir = t.TempDir() }) // stub implementation
 ```
 
-(`lambada`'s `attachments_test.go`/`scanfiles_test.go` both do this for
-their respective directory variables.) The `// stub implementation`
-comment is a deliberate marker -- it tells a reader this line exists to
-substitute test state for production state, not because the variable
-would normally be assigned here.
+The `// stub implementation` comment is a deliberate marker -- it tells a
+reader this line exists to substitute test state for production state,
+not because the variable would normally be assigned here.
 
 ### `httptest` for anything that talks HTTP
 
@@ -244,8 +241,6 @@ describe("withLogging", func() {
     })
 })
 ```
-
-(`lambada`'s `middleware_test.go`.)
 
 ### Test doubles for a real interface
 

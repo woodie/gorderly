@@ -50,8 +50,7 @@ gorderly -fd ./...
 Flags: default (no flag) renders the classic style (glyph + per-test
 elapsed time); `-fd` renders RSpec's `-fd` documentation format; `-fs`
 renders Mocha/Jest's spec format; `--format documentation` and `--format
-spec` are the long forms of `-fd`/`-fs`, matching
-[`xctidy`](https://github.com/woodie/xctidy)'s exact flag surface.
+spec` are the long forms of `-fd`/`-fs`.
 
 `-fv` (long form `--format vitest`) renders
 [Vitest](https://vitest.dev)'s own tree-reporter conventions: `✓`/`×`/`↓`
@@ -63,8 +62,7 @@ gorderly-specific, not part of the shared flag surface with `xctidy`
 (there's no Vitest equivalent on the XCTest side).
 
 `gorderly --version`/`gorderly -v` prints the installed version and exits
-immediately, without waiting on stdin -- matching `xctidy`'s own
-`--version`/`-v`.
+immediately, without waiting on stdin.
 
 ## Output styles
 
@@ -79,14 +77,10 @@ Vitest's own footer shape instead.
 | -fs | Mocha's spec format | Green `✔` + gray name, red `✗ name (FAILED - N)` |
 | -fv | Vitest's own tree | Green `✓ name`, two-toned green `2ms`, red `× name`, dim gray `↓ name` |
 
-`-fv` is [`xctidy`](https://github.com/woodie/xctidy)'s `-fv` counterpart
-for the Go Test side -- same glyphs, same millisecond conversion, same
-`Tests`/`Duration` footer shape. It currently omits Vitest's `Test Files`
-line: XCTest's own Test Suite nesting (a per-class suite wrapped in an "All
-tests"/"Selected tests" aggregate suite) hasn't been verified against real
-`xcodebuild` output, so a suite-level pass/fail count risks over-counting
-the wrapper suites as if they were their own files. `gorderly`'s equivalent
-(one line per Go package) had no such ambiguity.
+`-fv`'s `Test Files` line counts one entry per Go package that has test
+files, skipping any package `go test` reports as `[no test files]` --
+Go's own package boundaries give an exact, unambiguous file count, so this
+line has no known edge cases.
 
 ## Writing tests
 
@@ -135,8 +129,7 @@ make check    # terse: silent on success, full log on failure
 ```
 
 Cutting a release: bump `gorderlyVersion` in `version.go` by hand before
-tagging. Unlike `xctidy`'s `Version.swift` (regenerated from `git describe`
-at build time), `gorderly`'s primary install path is `go install
+tagging. `gorderly`'s primary install path is `go install
 github.com/woodie/gorderly@latest` -- a module-proxy fetch with no `.git`
 metadata to describe -- so the version string has to already be correct in
 the committed source at the tagged commit.
