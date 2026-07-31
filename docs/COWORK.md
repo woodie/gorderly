@@ -359,4 +359,14 @@ user's choice, since `v0.3.0` was superseded within the same session and
 never really shipped to anyone as a standalone release.
 
 Tagged `v0.3.0` after the user confirmed. See `docs/releases/v0.3.0.md`
+
+## Bumped to `expect` v0.3.0 (`ContainSubstring`/`HaveLen`/`BeEmpty`)
+
+`go.mod`'s `github.com/woodie/expect` pin bumped `v0.2.0` -> `v0.3.0`; no
+behavior change here, since nothing in this repo's own suite uses the new
+matchers yet. Hit the `go.sum`-not-committed gotcha rolling this out across
+`expect`'s three consumers in one session -- see
+`~/workspace/woodie/docs/COWORK.md`'s "Shared libraries across sibling
+repos" for the general lesson. Fixed here with a follow-up commit adding
+just the regenerated `go.sum`; `make check` clean after.
 for the release notes.
