@@ -10,9 +10,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	spec.Run(t, "run", func(t *testing.T, describe spec.G, it spec.S) {
-		context := describe
-
+	spec.Run(t, "run", func(t *testing.T, context spec.G, it spec.S) {
 		context("--version is passed", func() {
 			it("prints the version and exits 0 without reading stdin", func() {
 				var stdout, stderr bytes.Buffer

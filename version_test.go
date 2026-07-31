@@ -8,9 +8,7 @@ import (
 )
 
 func TestWantsVersion(t *testing.T) {
-	spec.Run(t, "wantsVersion", func(t *testing.T, describe spec.G, it spec.S) {
-		context := describe
-
+	spec.Run(t, "wantsVersion", func(t *testing.T, context spec.G, it spec.S) {
 		context("the long flag is present", func() {
 			it("matches", func() {
 				expect(wantsVersion([]string{"--version"}), t).To(Equal(true))

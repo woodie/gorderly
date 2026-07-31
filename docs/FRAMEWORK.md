@@ -62,18 +62,42 @@ closure invoked explicitly in each `it`, is what you want.
 
 ## Aliasing `spec`'s structural functions
 
-`spec.Run` hands your suite closure `describe`/`context`/`it` positionally
--- they're just parameter names, so name them however reads best. The
-convention across these projects: alias `describe` to `context` once at
-the top of the closure, for nested groups that read better as "context"
-than "describe":
+`spec.Run` hands your suite closure a group parameter (`spec.G`) and `it`
+(`spec.S`) positionally -- the group parameter is just a name, so call it
+however reads best. The convention across these projects: name the
+parameter `context`, since most nested groups describe a condition
+("with a temp dir", "when the flag is present") rather than the feature
+or method under test:
 
 ```go
-spec.Run(t, "Object", func(t *testing.T, describe spec.G, it spec.S) {
-    context := describe
+spec.Run(t, "Object", func(t *testing.T, context spec.G, it spec.S) {
     // ...
 })
 ```
+
+Some suites genuinely want both words -- an outer group naming the
+method under test (RSpec-style `describe "#divide"`), with `context`
+nested inside for the conditions that vary. Only then, alias `describe`
+to `context` once at the top of the closure -- and only then, since an
+alias that's declared but never called won't compile:
+
+```go
+spec.Run(t, "Object", func(t *testing.T, context spec.G, it spec.S) {
+    describe := context
+
+    describe("DoThing", func() {
+        context("with a temp dir", func() {
+            // ...
+        })
+    })
+})
+```
+
+Most files in this account only ever call `context(...)` and skip the
+alias entirely -- see `gorderly`'s own `parse_test.go`/`render_test.go`.
+`expect`'s `expect_test.go` and `humane`'s `time_test.go` are the
+opposite case: `describe(...)` groups each matcher/feature, `context(...)`
+nests conditions inside.
 
 `it`'s hook methods (`it.BeforeEach`/`it.AfterEach`/`it.JustBeforeEach`)
 are called qualified, not aliased to bare lowercase locals. Earlier
@@ -134,7 +158,7 @@ outside `go test`'s own hierarchy syntax.
 letter prefix, since Go has no bare-word `x`/`f` naming convention to lean on:
 
 ```go
-describe.Pend("still needs a real fixture", func() {
+context.Pend("still needs a real fixture", func() {
     // ...none of the code in this closure will run.
 })
 
@@ -142,12 +166,12 @@ it.Pend("returns the cached value", func() {
     // ...this one spec is skipped; siblings still run.
 })
 
-describe.Focus("the bug we're chasing right now", func() {
+context.Focus("the bug we're chasing right now", func() {
     // ...only this group (and other focused specs) run; everything else is skipped.
 })
 ```
 
-`it.Focus`/`describe.Focus` accept the same ordering options (`spec.Random()`,
+`it.Focus`/`context.Focus` accept the same ordering options (`spec.Random()`,
 `spec.Parallel()`, ...) as a normal call; `.Pend` ignores any options passed to
 it. See `xctidy`'s and `kotidy`'s own `docs/FRAMEWORK.md` for the Swift/Kotlin
 equivalents (`xit`/`fit`, spelled as literal keywords there instead of methods).
@@ -336,8 +360,8 @@ import (
 func expect[T any](got T, t testing.TB) Expectation[T] { return Expect(got, t) }
 
 func TestObject(t *testing.T) {
-    spec.Run(t, "Object", func(t *testing.T, describe spec.G, it spec.S) {
-        context := describe
+    spec.Run(t, "Object", func(t *testing.T, context spec.G, it spec.S) {
+        describe := context
 
         var obj *myapp.Object
         it.BeforeEach(func() { obj = myapp.NewObject(t.Context()) })

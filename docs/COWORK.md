@@ -177,6 +177,47 @@ Mac: `go mod tidy` resolved without a stale checksum, and `go test -v
 unaffected -- kept as-is, dot-imported, paired with plain upstream `spec`
 rather than the fork.
 
+## Second reversal: back on `woodie/spec`, this time for real BeforeEach/AfterEach/JustBeforeEach
+
+Different shape from the reversal above -- no `RunAliased`, no
+`.AsContext()`, no six-parameter suite signature. `go.mod` picks up
+`woodie/spec` v0.2.0 via a plain `replace` directive
+(`replace github.com/sclevine/spec => github.com/woodie/spec v0.2.0`),
+since the fork keeps upstream's module path unchanged. The fork adds
+`BeforeEach`/`AfterEach`/`JustBeforeEach` (`Before`/`After` still work,
+deprecated via `staticcheck`'s `SA1019`, not removed) -- see
+`woodie/spec`'s own `docs/COWORK.md` for the full history, including why
+that shipped as a deprecation rather than a breaking rename.
+
+Every real call site (`main_test.go`, `version_test.go`, `render_test.go`,
+`parse_test.go`) updated from `it.Before(...)`/`it.After(...)` to
+`it.BeforeEach(...)`/`it.AfterEach(...)`.
+
+Same session, separate decision: flipped which word is the raw
+`spec.Run` group parameter. Previously `describe spec.G` was the
+parameter and `context := describe` got aliased in every file, even
+though every real file in this repo only ever calls `context(...)` --
+`describe` was declared solely to feed that one alias line. Flipped
+directly: the parameter is now named `context` (matching what's actually
+called), and `describe := context` is only added in files that genuinely
+call `describe(...)` somewhere (naming the method/feature under test,
+RSpec-style) -- none currently do in this repo, so `main_test.go`/
+`version_test.go`/`render_test.go`/`parse_test.go` all dropped the alias
+line entirely rather than declaring an alias that's never called (which
+wouldn't compile anyway -- Go rejects unused locals). `expect`'s
+`expect_test.go` and `humane`'s `time_test.go` are the repos where the
+alias is genuinely earned, since they call both words for real -- see
+`docs/FRAMEWORK.md`'s "Aliasing `spec`'s structural functions" section,
+rewritten this session to document the "only alias what you actually
+call" rule directly instead of presenting the alias as an always-add-it
+default.
+
+Not yet verified against a real Go toolchain -- no Go in this sandbox.
+`go mod tidy && make check` on the user's own Mac is the next step,
+remembering to commit `go.sum` alongside `go.mod` before pushing (see
+`~/workspace/woodie/docs/COWORK.md`'s "Shared libraries across sibling
+repos").
+
 Same session: `expect_alias_test.go` renamed to `config_test.go`, which
 now carries two things -- the real `expect` alias (actual code, runs as
 part of the suite) and a commented-out `/* ... */` translation of a

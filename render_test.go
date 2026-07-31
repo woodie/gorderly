@@ -24,16 +24,14 @@ func samplePackages() []PackageResult {
 }
 
 func TestRender(t *testing.T) {
-	spec.Run(t, "Render", func(t *testing.T, describe spec.G, it spec.S) {
-		context, before, _ := describe, it.Before, it.After
-
+	spec.Run(t, "Render", func(t *testing.T, context spec.G, it spec.S) {
 		context("a package has a pass, a fail, and a skip", func() {
 			var buf bytes.Buffer
 			var failed int
 			var err error
 			var out string
 
-			before(func() {
+			it.BeforeEach(func() {
 				failed, err = Render(samplePackages(), StyleClassic, &buf, false)
 				out = buf.String()
 			})
@@ -86,7 +84,7 @@ func TestRender(t *testing.T) {
 		context("classic style with color enabled", func() {
 			var out string
 
-			before(func() {
+			it.BeforeEach(func() {
 				var buf bytes.Buffer
 				_, _ = Render(samplePackages(), StyleClassic, &buf, true)
 				out = buf.String()
@@ -109,7 +107,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var failed int
 
-			before(func() {
+			it.BeforeEach(func() {
 				pkgs := []PackageResult{{
 					ImportPath: "example.com/clean",
 					Outcome:    "ok",
@@ -136,7 +134,7 @@ func TestRender(t *testing.T) {
 		context("color is disabled", func() {
 			var buf bytes.Buffer
 
-			before(func() {
+			it.BeforeEach(func() {
 				_, _ = Render(samplePackages(), StyleClassic, &buf, false)
 			})
 
@@ -149,7 +147,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			before(func() {
+			it.BeforeEach(func() {
 				_, _ = Render(samplePackages(), StyleFd, &buf, false)
 				out = buf.String()
 			})
@@ -175,7 +173,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			before(func() {
+			it.BeforeEach(func() {
 				_, _ = Render(samplePackages(), StyleFs, &buf, false)
 				out = buf.String()
 			})
@@ -197,7 +195,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			before(func() {
+			it.BeforeEach(func() {
 				_, _ = Render(samplePackages(), StyleFv, &buf, false)
 				out = buf.String()
 			})
@@ -230,7 +228,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			before(func() {
+			it.BeforeEach(func() {
 				pkgs := []PackageResult{{
 					ImportPath: "example.com/slow",
 					Outcome:    "ok",
@@ -251,7 +249,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			before(func() {
+			it.BeforeEach(func() {
 				pkgs := []PackageResult{{
 					ImportPath: "example.com/clean",
 					Outcome:    "ok",

@@ -27,15 +27,13 @@ FAIL	example.com/math	0.003s
 `
 
 func TestParse(t *testing.T) {
-	spec.Run(t, "Parse", func(t *testing.T, describe spec.G, it spec.S) {
-		context, before, _ := describe, it.Before, it.After
-
+	spec.Run(t, "Parse", func(t *testing.T, context spec.G, it spec.S) {
 		context("a transcript mixes pass, fail, and skip", func() {
 			var pkgs []PackageResult
 			var err error
 			var pkg PackageResult
 
-			before(func() {
+			it.BeforeEach(func() {
 				pkgs, err = Parse(strings.NewReader(mixedTranscript))
 				if len(pkgs) > 0 {
 					pkg = pkgs[0]
@@ -87,7 +85,7 @@ func TestParse(t *testing.T) {
 			var pkgs []PackageResult
 			var err error
 
-			before(func() {
+			it.BeforeEach(func() {
 				transcript := "?   \texample.com/empty\t[no test files]\n"
 				pkgs, err = Parse(strings.NewReader(transcript))
 			})
