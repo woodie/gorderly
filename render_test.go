@@ -81,6 +81,32 @@ func TestRender(t *testing.T) {
 			})
 		})
 
+		context("a package has more than one top-level Test function", func() {
+			var out string
+
+			it.BeforeEach(func() {
+				pkgs := []PackageResult{{
+					ImportPath: "example.com/multi",
+					Outcome:    "ok",
+					Results: []TestResult{
+						{Hierarchy: []string{"TestMath", "addition", "adds_two_positive_numbers"}, State: StatePass, Elapsed: 0.001},
+						{Hierarchy: []string{"TestGeometry", "area", "computes_a_rectangle"}, State: StatePass, Elapsed: 0.001},
+					},
+				}}
+				var buf bytes.Buffer
+				_, _ = Render(pkgs, StyleClassic, &buf, false)
+				out = buf.String()
+			})
+
+			it("separates the two top-level suites with a blank line", func() {
+				expect(out, t).To(Contain("adds two positive numbers (0.0010 seconds)\n\n  TestGeometry"))
+			})
+
+			it("prints no blank line between the package header and the first suite", func() {
+				expect(out, t).To(Contain("example.com/multi\n  TestMath"))
+			})
+		})
+
 		context("classic style with color enabled", func() {
 			var out string
 

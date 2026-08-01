@@ -69,6 +69,7 @@ func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool)
 		pkgFailed := false
 
 		var prevPath []string
+		isFirstResult := true
 		for _, r := range pkg.Results {
 			path := r.Hierarchy[:len(r.Hierarchy)-1]
 			leafName := humanize(r.Hierarchy[len(r.Hierarchy)-1])
@@ -77,6 +78,11 @@ func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool)
 			for shared < len(prevPath) && shared < len(path) && prevPath[shared] == path[shared] {
 				shared++
 			}
+			// A blank line goes before every top-level suite (except first)
+			if shared == 0 && !isFirstResult {
+				fp("\n")
+			}
+			isFirstResult = false
 			for i := shared; i < len(path); i++ {
 				fp("%s%s\n", strings.Repeat("  ", i+1), humanize(path[i]))
 			}
