@@ -59,6 +59,21 @@ the same way -- a plain closure gets to the same place -- but
 `it.JustBeforeEach` is now the more direct route when a hook, not a
 closure invoked explicitly in each `it`, is what you want.
 
+**Exception: `go install`-able CLI tools can't use the `woodie/spec`
+`replace` directive.** `go install pkg@version` treats the target module
+as if it were the main module, and Go unconditionally rejects any
+`replace` directive in a go.mod under that treatment -- true regardless
+of whether the replaced package is only ever imported by `_test.go`
+files. `gorderly` hit this for real: `v0.4.0` shipped with the
+`replace` line and broke `go install github.com/woodie/gorderly@latest`
+outright. Library-shaped consumers of this pairing (`humane`, `lambada`,
+`expect` itself) are unaffected -- nothing ever tries to `go install`
+them, so their own `replace` directives never hit this check. `gorderly`
+reverted its own test suite to plain upstream `it.Before`/`it.After` in
+`v0.4.1` to fix it; the worked examples below still show the fork's
+`BeforeEach`/`AfterEach`/`JustBeforeEach` as the general recommendation
+for everything that isn't a `go install`-able binary.
+
 ## The pieces
 
 - **`spec`** gives you `describe`/`context`/`it` structure and

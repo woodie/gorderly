@@ -33,7 +33,7 @@ func TestParse(t *testing.T) {
 			var err error
 			var pkg PackageResult
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				pkgs, err = Parse(strings.NewReader(mixedTranscript))
 				if len(pkgs) > 0 {
 					pkg = pkgs[0]
@@ -85,7 +85,7 @@ func TestParse(t *testing.T) {
 			var pkgs []PackageResult
 			var err error
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				transcript := "?   \texample.com/empty\t[no test files]\n"
 				pkgs, err = Parse(strings.NewReader(transcript))
 			})

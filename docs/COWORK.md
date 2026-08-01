@@ -411,3 +411,36 @@ matchers yet. Hit the `go.sum`-not-committed gotcha rolling this out across
 repos" for the general lesson. Fixed here with a follow-up commit adding
 just the regenerated `go.sum`; `make check` clean after.
 for the release notes.
+
+## v0.4.0 → v0.4.1: the `woodie/spec` replace directive broke `go install`
+
+`v0.4.0` picked up `github.com/woodie/spec` v0.2.0 (`BeforeEach`/
+`AfterEach`/`JustBeforeEach`) via a `go.mod` `replace` directive, same
+shape as the "Second reversal" entry above. Tagged, pushed, and released
+clean -- `make check` was green, CI was green. What wasn't caught: `go
+install github.com/woodie/gorderly@latest` failed outright with "must
+not contain directives that would cause it to be interpreted differently
+than if it were the main module." `go install pkg@version` treats the
+target module as the main module, and Go unconditionally rejects any
+`replace` directive under that treatment -- true regardless of whether
+the replaced package is only ever imported by `_test.go` files, which is
+all `spec` ever was here. Neither `make check` nor CI exercises `go
+install` against a real module-proxy fetch, so nothing in the existing
+verification loop could have caught this before it shipped.
+
+Third reversal off the fork, this time for a real, user-facing reason
+rather than a style preference: `it.BeforeEach` (the only fork hook
+gorderly's suite actually used -- `AfterEach`/`JustBeforeEach` never
+were) reverted to plain upstream `it.Before` in `parse_test.go`/
+`render_test.go`, `go.mod`'s `replace` line dropped entirely. Immediate
+unblock handed to the user while this fix was in progress: clone +
+`go install .` from a local checkout sidesteps the bug completely, since
+gorderly is the main module in that scenario, not a fetched one.
+
+`humane`/`lambada`/`expect` are unaffected by this whole class of bug --
+they're libraries, nothing ever runs `go install` against them, so their
+own `replace` directives never hit this check. This is specific to
+`go install`-able CLI tools; worth checking `gomeleon` (the other Go
+binary in this account) for the same pattern if it ever adopts the fork.
+Generalized into `docs/FRAMEWORK.md`'s new "Exception: `go install`-able
+CLI tools" callout. Tagged `v0.4.1`; see `docs/releases/v0.4.1.md`.

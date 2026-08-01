@@ -31,7 +31,7 @@ func TestRender(t *testing.T) {
 			var err error
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				failed, err = Render(samplePackages(), StyleClassic, &buf, false)
 				out = buf.String()
 			})
@@ -84,7 +84,7 @@ func TestRender(t *testing.T) {
 		context("a package has more than one top-level Test function", func() {
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				pkgs := []PackageResult{{
 					ImportPath: "example.com/multi",
 					Outcome:    "ok",
@@ -110,7 +110,7 @@ func TestRender(t *testing.T) {
 		context("classic style with color enabled", func() {
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				var buf bytes.Buffer
 				_, _ = Render(samplePackages(), StyleClassic, &buf, true)
 				out = buf.String()
@@ -133,7 +133,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var failed int
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				pkgs := []PackageResult{{
 					ImportPath: "example.com/clean",
 					Outcome:    "ok",
@@ -160,7 +160,7 @@ func TestRender(t *testing.T) {
 		context("color is disabled", func() {
 			var buf bytes.Buffer
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				_, _ = Render(samplePackages(), StyleClassic, &buf, false)
 			})
 
@@ -173,7 +173,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				_, _ = Render(samplePackages(), StyleFd, &buf, false)
 				out = buf.String()
 			})
@@ -199,7 +199,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				_, _ = Render(samplePackages(), StyleFs, &buf, false)
 				out = buf.String()
 			})
@@ -221,7 +221,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				_, _ = Render(samplePackages(), StyleFv, &buf, false)
 				out = buf.String()
 			})
@@ -254,7 +254,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				pkgs := []PackageResult{{
 					ImportPath: "example.com/slow",
 					Outcome:    "ok",
@@ -275,7 +275,7 @@ func TestRender(t *testing.T) {
 			var buf bytes.Buffer
 			var out string
 
-			it.BeforeEach(func() {
+			it.Before(func() {
 				pkgs := []PackageResult{{
 					ImportPath: "example.com/clean",
 					Outcome:    "ok",
