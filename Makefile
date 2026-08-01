@@ -15,9 +15,11 @@ lint:
 	golangci-lint run
 
 # Verbose on purpose, and dogfoods gorderly on its own suite -- the same
-# self-hosting xctidy does against its own Quick/Nimble specs.
+# self-hosting xctidy does against its own Quick/Nimble specs. -fs (Mocha's
+# spec format) so this matches kotidy's `make dogfood` output -- all four
+# repos in the family screenshot the same style for their READMEs.
 test:
-	go run . ./...
+	go run . -fs ./...
 
 # Terser than `test` on purpose: plain `go test` has no per-test dot mode of
 # its own (unlike ginkgo's free dots, which `humane`'s check target relies

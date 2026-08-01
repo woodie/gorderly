@@ -17,6 +17,16 @@ this pairing (`xctidy`) follows the same shape with different tools -- see
 if you're working on that side instead. For `expect`'s full matcher list,
 see [its README](https://github.com/woodie/expect#readme).
 
+## Keep descriptions concise
+
+`describe`/`context`/`it` strings render as literal lines in the tree --
+treat them like any other line of code meant to be read at a glance. State
+only what's true, in the fewest words that still read like a sentence;
+leave out rationale, comparisons to other tools, or anything that belongs
+in a doc or comment instead. `"switches from milliseconds to seconds"`, not
+`"switches from milliseconds to seconds, matching Vitest's own formatTime
+threshold"`.
+
 ## Why `spec`, not Ginkgo
 
 Ginkgo doesn't route through `go test`'s own `t.Run` -- it owns its own

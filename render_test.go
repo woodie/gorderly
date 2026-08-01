@@ -217,7 +217,7 @@ func TestRender(t *testing.T) {
 				expect(out, t).NotTo(Contain("Test Failed"))
 			})
 
-			it("shows elapsed time in milliseconds on pass and fail leaves, like Vitest's own tree", func() {
+			it("shows per-leaf elapsed time in milliseconds", func() {
 				expect(out, t).To(Contain("✓ adds two positive numbers 1ms"))
 				expect(out, t).To(Contain("× adds a negative number 2ms"))
 				expect(out, t).NotTo(Contain("↓ is skipped for now "))
@@ -240,7 +240,7 @@ func TestRender(t *testing.T) {
 				out = buf.String()
 			})
 
-			it("switches from milliseconds to seconds, matching Vitest's own formatTime threshold", func() {
+			it("switches from milliseconds to seconds", func() {
 				expect(out, t).To(Contain("✓ takes a while 1.50s"))
 			})
 		})

@@ -7,7 +7,7 @@
 
 ![Example Screenshot](docs/example.png)
 
-RSpec style output for plain `go test` -- no BDD framework required.
+RSpec/Mocha/Vitest-style output for plain `go test` -- no BDD framework required.
 
 `gorderly` reads `go test -v`'s raw output directly (the same textual
 protocol every other Go tool already parses) and re-renders it as a nested
@@ -82,7 +82,9 @@ files, skipping any package `go test` reports as `[no test files]` --
 Go's own package boundaries give an exact, unambiguous file count, so this
 line has no known edge cases.
 
-## Writing tests
+## Things to know
+
+### Writing tests
 
 `gorderly` only ever needs `go test -v`'s raw output -- it renders
 whatever nesting your tests already produce, `spec`-based or not. For how
@@ -93,7 +95,7 @@ nesting, the `subject` pattern, mocking and stubbing -- see
 (`parse_test.go`, `render_test.go`, `main_test.go`, `version_test.go`,
 `config_test.go`) are real examples of that shape, not just a sketch.
 
-## Limitations
+### Limitations
 
 - Tree order follows completion order, which matches declaration order for
   serial tests but can reorder under `t.Parallel()`
@@ -123,7 +125,7 @@ nesting, the `subject` pattern, mocking and stubbing -- see
 ```
 make build    # go build -o gorderly
 make install  # builds, then moves the binary to ~/go/bin/
-make test     # verbose, dogfoods gorderly on its own suite
+make test     # verbose, dogfoods gorderly on its own suite in -fs style
 make lint     # golangci-lint
 make check    # terse: silent on success, full log on failure
 ```
