@@ -41,22 +41,16 @@ gorderly -fd .
 gorderly -fd ./...
 ```
 
-Flags: default (no flag) renders the classic style (glyph + per-test
-elapsed time); `-fd` renders RSpec's `-fd` documentation format; `-fs`
-renders Mocha/Jest's spec format; `--format documentation` and `--format
-spec` are the long forms of `-fd`/`-fs`.
+Flags select the output style -- see [Output styles](#output-styles) below.
 
-`-fv` (long form `--format vitest`) renders
-[Vitest](https://vitest.dev)'s own tree-reporter conventions: `✓`/`×`/`↓`
-glyphs and a right-justified `Test Files`/`Tests`/`Duration` footer, so
-`go test`'s output reads as a continuation of the same terminal a
-`vitest run` right above it already printed -- gorderly never touches or
-wraps Vitest's own output to get there, it just matches it. This flag is
-gorderly-specific, not part of the shared flag surface with `xctidy`
-(there's no Vitest equivalent on the XCTest side).
+### Version
 
-`gorderly --version`/`gorderly -v` prints the installed version and exits
-immediately, without waiting on stdin.
+```
+gorderly --version
+```
+
+Prints the installed version and exits immediately, without waiting on
+stdin.
 
 ## Output styles
 
