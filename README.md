@@ -7,17 +7,9 @@
 
 ![Example Screenshot](docs/example.png)
 
-RSpec/Mocha/Vitest-style output for plain `go test` -- no BDD framework required.
-
-`gorderly` reads `go test -v`'s raw output directly (the same textual
-protocol every other Go tool already parses) and re-renders it as a nested
-tree, using the hierarchy `t.Run` subtests already carry in their
-`/`-joined names. No `--json-report` round trip, no test-runner dependency,
-no third-party BDD DSL to adopt -- if your tests use stdlib `testing` with
-nested `t.Run`, `gorderly` already understands them.
-[`gotestsum`](https://github.com/gotestyourself/gotestsum) already covers
-`dots`/`testname`/`pkgname`/`testdox` well -- `gorderly` exists
-for the one format it doesn't: a real deduped, nested tree.
+RSpec/Mocha/Vitest-style output for Go that works with plain `go test` by
+reading its raw `-v` output directly. No TDD framework required. Any suite
+using stdlib `testing` with nested `t.Run` will work without changes.
 
 ## Installation
 
