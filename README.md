@@ -9,7 +9,9 @@
 
 RSpec/Mocha/Vitest-style output for Go that works with plain `go test` by
 reading its raw `-v` output directly. No TDD framework required. Any suite
-using stdlib `testing` with nested `t.Run` will work without changes.
+using stdlib `testing` with nested `t.Run` will work without changes. See
+at a glance which spec actually failed, instead of hunting through a wall
+of PASS/FAIL lines.
 
 ## Installation
 
