@@ -51,7 +51,7 @@ func TestRender(t *testing.T) {
 			it("prints the top-level test function flush left, not nested under the package header", func() {
 				// The package path is informational, not a real node in go
 				// test's own hierarchy -- it should cost no indent level.
-				expect(out, t).To(Contain("example.com/math\nTestMath\n  addition\n"))
+				expect(out, t).To(Contain("example.com/math\n\nTestMath\n  addition\n"))
 			})
 
 			it("prints the shared context path once, not once per leaf", func() {
@@ -108,8 +108,8 @@ func TestRender(t *testing.T) {
 				expect(out, t).To(Contain("adds two positive numbers (0.0010 seconds)\n\nTestGeometry"))
 			})
 
-			it("prints no blank line between the package header and the first suite", func() {
-				expect(out, t).To(Contain("example.com/multi\nTestMath"))
+			it("also separates the package header from the first suite with a blank line", func() {
+				expect(out, t).To(Contain("example.com/multi\n\nTestMath"))
 			})
 		})
 
