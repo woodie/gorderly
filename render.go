@@ -39,6 +39,13 @@ type failureEntry struct {
 // xctidy dropped stacking a second native-formatter summary on top of it
 // after real side-by-side output made mixed footers "confusing"; gorderly
 // follows that same resolved lesson from the start rather than relearning it.
+//
+// The package import path is printed as a plain label line, not a real
+// node in the hierarchy: go test -v's own === RUN tree never nests under
+// it (it only appears once, disconnected, in the final "ok <path>"
+// summary line), so it costs no indent level -- the first real Hierarchy
+// segment renders flush left, matching kotidy's and xctidy's own
+// top-level suite lines.
 func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool) (failedCount int, err error) {
 	colorize := func(code, s string) string {
 		if !colorEnabled {
@@ -84,13 +91,13 @@ func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool)
 			}
 			isFirstResult = false
 			for i := shared; i < len(path); i++ {
-				fp("%s%s\n", strings.Repeat("  ", i+1), humanize(path[i]))
+				fp("%s%s\n", strings.Repeat("  ", i), humanize(path[i]))
 			}
 
 			total++
 			totalElapsed += r.Elapsed
 
-			indent := strings.Repeat("  ", len(path)+1)
+			indent := strings.Repeat("  ", len(path))
 			switch r.State {
 			case StateFail:
 				failedCount++
