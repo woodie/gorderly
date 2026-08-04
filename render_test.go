@@ -298,5 +298,37 @@ func TestRender(t *testing.T) {
 				expect(out, t).To(Contain("Tests  1 passed (1)"))
 			})
 		})
+
+		context("every leaf rounds down to zero but the package itself took real time", func() {
+			// go test -v's own per-leaf lines are rounded to two decimal
+			// places, so a package of sub-millisecond tests reports "0.00s"
+			// for every one of them -- summing those leaves (the old bug)
+			// produced a total of exactly zero. pkg.Elapsed simulates go
+			// test's own "ok <pkg> 0.363s" package-summary line, a real
+			// measurement the rounded leaves never had.
+			samplePkgs := func() []PackageResult {
+				return []PackageResult{{
+					ImportPath: "example.com/fast",
+					Outcome:    "ok",
+					Elapsed:    0.363,
+					Results: []TestResult{
+						{Hierarchy: []string{"TestFast", "does the first thing"}, State: StatePass, Elapsed: 0},
+						{Hierarchy: []string{"TestFast", "does the second thing"}, State: StatePass, Elapsed: 0},
+					},
+				}}
+			}
+
+			it("reflects the package's real elapsed time in the fv Duration footer", func() {
+				var buf bytes.Buffer
+				_, _ = Render(samplePkgs(), StyleFv, &buf, false)
+				expect(buf.String(), t).To(Contain("Duration  363ms"))
+			})
+
+			it("reflects the package's real elapsed time in the classic Tests Passed footer", func() {
+				var buf bytes.Buffer
+				_, _ = Render(samplePkgs(), StyleClassic, &buf, false)
+				expect(buf.String(), t).To(Contain("(0.3630 seconds)"))
+			})
+		})
 	})
 }
