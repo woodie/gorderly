@@ -96,7 +96,6 @@ func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool)
 			}
 
 			total++
-			totalElapsed += r.Elapsed
 
 			indent := strings.Repeat("  ", len(path))
 			switch r.State {
@@ -123,6 +122,8 @@ func Render(pkgs []PackageResult, style Style, out io.Writer, colorEnabled bool)
 
 			prevPath = path
 		}
+		// pkg.Elapsed is go test's own package-summary time, not a sum of the rounded per-leaf times.
+		totalElapsed += pkg.Elapsed
 		if pkgFailed {
 			testFilesFailed++
 		}
