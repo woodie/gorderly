@@ -42,6 +42,14 @@ hierarchy `t.Run` subtests already carry in their names. No BDD framework, no
   reports elapsed time to two decimal places of a second, so fast subtests show a
   flat `0ms` where Vitest's own finer JS timers would show `2ms`/`4ms` -- a real
   precision ceiling, not a bug.
+- **The duration's second tone was wrong until Woodie reported the real color**:
+  ANSI-16 bright green (`92`, close to `#2ee721`) was a guess; a real `vitest
+  run` color-picker readout showed the unit suffix is actually a much paler
+  `#b9e4b4`. No ANSI-16 entry is close, so `vitestUnitGreen` is now a 24-bit
+  true-color escape (`38;2;185;228;180`) instead. Ported the same fix to
+  `xctidy`/`kotidy`/`rutidy`/`gomeleon` in the same session -- `gomeleon`
+  didn't even render a duration for `-fv` yet, so it also gained the
+  number+unit split the other three already had.
 - **Classic style colors only the glyph and the elapsed-time number**, not the whole
   line -- matches `xctidy`'s own partial-coloring convention. Fail/skip lines follow
   the same partial pattern.
