@@ -74,5 +74,5 @@ made locally, `git push`/`git push --tags` always hand off to the user.
 
 ## Current status
 
-`v0.4.2`, CI green. Output parity-audited against `xctidy` in both directions
+`v0.4.3`, CI green. Output parity-audited against `xctidy` in both directions
 (classic/fd/fs/fv glyphs, colors, and footer shape match exactly).
