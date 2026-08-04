@@ -18,13 +18,14 @@ const (
 )
 
 const (
-	ansiPrefix  = "\033["
-	red         = "31"
-	green       = "32"
-	brightGreen = "92"
-	yellow      = "33"
-	cyan        = "36"
-	gray        = "90"
+	ansiPrefix = "\033["
+	red        = "31"
+	green      = "32"
+	yellow     = "33"
+	cyan       = "36"
+	gray       = "90"
+	// vitestUnitGreen: real Vitest's own unit-suffix color (#b9e4b4); no ANSI-16 entry matches it.
+	vitestUnitGreen = "38;2;185;228;180"
 )
 
 type failureEntry struct {
@@ -202,7 +203,7 @@ func colorizePass(style Style, name string, r TestResult, colorize func(string, 
 		return colorize(green, "✔") + " " + colorize(gray, name)
 	case StyleFv:
 		num, unit := formatVitestDurationParts(r.Elapsed)
-		return colorize(green, "✓") + " " + name + " " + colorize(green, num) + colorize(brightGreen, unit)
+		return colorize(green, "✓") + " " + name + " " + colorize(green, num) + colorize(vitestUnitGreen, unit)
 	default: // StyleFd
 		return colorize(green, name)
 	}
