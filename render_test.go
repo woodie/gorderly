@@ -318,13 +318,13 @@ func TestRender(t *testing.T) {
 				}}
 			}
 
-			it("reflects the package's real elapsed time in the fv Duration footer", func() {
+			it("reflects real elapsed time in the fv Duration footer", func() {
 				var buf bytes.Buffer
 				_, _ = Render(samplePkgs(), StyleFv, &buf, false)
 				expect(buf.String(), t).To(Contain("Duration  363ms"))
 			})
 
-			it("reflects the package's real elapsed time in the classic Tests Passed footer", func() {
+			it("reflects real elapsed time in the classic Tests Passed footer", func() {
 				var buf bytes.Buffer
 				_, _ = Render(samplePkgs(), StyleClassic, &buf, false)
 				expect(buf.String(), t).To(Contain("(0.3630 seconds)"))
